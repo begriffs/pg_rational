@@ -1,0 +1,49 @@
+create extension pg_rational;
+-- input
+-- Can parse a simple fraction
+select '1/3'::rational;
+ rational 
+----------
+ 1/3
+(1 row)
+
+-- Interprets negative numerator
+select '-1/3'::rational;
+ rational 
+----------
+ -1/3
+(1 row)
+
+-- Moves negative value from denom to numer
+select '1/-3'::rational;
+ rational 
+----------
+ -1/3
+(1 row)
+
+-- Double negative becomes positive
+select '-1/-3'::rational;
+ rational 
+----------
+ 1/3
+(1 row)
+
+-- no spaces
+select '1 /3'::rational;
+ERROR:  invalid input syntax for fraction: "1 /3"
+LINE 1: select '1 /3'::rational;
+               ^
+-- no single numbers
+select '1'::rational;
+ERROR:  invalid input syntax for fraction: "1"
+LINE 1: select '1'::rational;
+               ^
+-- no garbage
+select ''::rational;
+ERROR:  invalid input syntax for fraction: ""
+LINE 1: select ''::rational;
+               ^
+select 'sdfkjsdfj34984538'::rational;
+ERROR:  invalid input syntax for fraction: "sdfkjsdfj34984538"
+LINE 1: select 'sdfkjsdfj34984538'::rational;
+               ^
