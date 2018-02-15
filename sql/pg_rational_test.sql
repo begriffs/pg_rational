@@ -12,6 +12,10 @@ select '1/-3'::rational;
 select '-1/-3'::rational;
 -- biggest values
 select '9223372036854775807/9223372036854775807'::rational;
+
+-- SEND works
+select rational_send('1/3');
+
 -- too big
 select '9223372036854775808/9223372036854775807'::rational;
 -- no spaces

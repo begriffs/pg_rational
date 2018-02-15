@@ -35,6 +35,13 @@ select '9223372036854775807/9223372036854775807'::rational;
  9223372036854775807/9223372036854775807
 (1 row)
 
+-- SEND works
+select rational_send('1/3');
+           rational_send            
+------------------------------------
+ \x00000000000000010000000000000003
+(1 row)
+
 -- too big
 select '9223372036854775808/9223372036854775807'::rational;
 ERROR:  numerator or denominator outside valid int64 value: "9223372036854775808/9223372036854775807"
