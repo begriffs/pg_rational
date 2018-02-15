@@ -31,10 +31,23 @@ rational_in(PG_FUNCTION_ARGS) {
   int64 n, d;
   Rational *result = palloc(sizeof(Rational));
 
+  errno = 0;
   if(sscanf(s, INT64_FORMAT "/" INT64_FORMAT, &n, &d) != 2) {
     ereport(ERROR,
       (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
        errmsg("invalid input syntax for fraction: \"%s\"", s))
+    );
+  }
+  if(errno == ERANGE) {
+    ereport(ERROR,
+      (errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+       errmsg("numerator or denominator outside valid int64 value: \"%s\"", s))
+    );
+  }
+  if(d == 0) {
+    ereport(ERROR,
+      (errcode(ERRCODE_DIVISION_BY_ZERO),
+       errmsg("fraction cannot have zero denominator: \"%s\"", s))
     );
   }
 

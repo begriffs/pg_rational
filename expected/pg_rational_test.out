@@ -35,10 +35,20 @@ select '9223372036854775807/9223372036854775807'::rational;
  9223372036854775807/9223372036854775807
 (1 row)
 
+-- too big
+select '9223372036854775808/9223372036854775807'::rational;
+ERROR:  numerator or denominator outside valid int64 value: "9223372036854775808/9223372036854775807"
+LINE 1: select '9223372036854775808/9223372036854775807'::rational;
+               ^
 -- no spaces
 select '1 /3'::rational;
 ERROR:  invalid input syntax for fraction: "1 /3"
 LINE 1: select '1 /3'::rational;
+               ^
+-- no zero denominator
+select '1/0'::rational;
+ERROR:  fraction cannot have zero denominator: "1/0"
+LINE 1: select '1/0'::rational;
                ^
 -- no single numbers
 select '1'::rational;

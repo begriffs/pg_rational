@@ -12,8 +12,12 @@ select '1/-3'::rational;
 select '-1/-3'::rational;
 -- biggest values
 select '9223372036854775807/9223372036854775807'::rational;
+-- too big
+select '9223372036854775808/9223372036854775807'::rational;
 -- no spaces
 select '1 /3'::rational;
+-- no zero denominator
+select '1/0'::rational;
 -- no single numbers
 select '1'::rational;
 -- no garbage
