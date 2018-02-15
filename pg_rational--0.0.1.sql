@@ -27,3 +27,15 @@ CREATE TYPE rational (
   SEND    = rational_send,
   INTERNALLENGTH = 16
 );
+
+CREATE FUNCTION rational_add(rational, rational)
+RETURNS rational
+AS '$libdir/pg_rational'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR + (
+  leftarg = rational,
+  rightarg = rational,
+  procedure = rational_add,
+  commutator = +
+);

@@ -21,6 +21,13 @@ select '1/-3'::rational;
  -1/3
 (1 row)
 
+-- don't move negative if it would overflow
+select '1/-9223372036854775808'::rational;
+        rational        
+------------------------
+ 1/-9223372036854775808
+(1 row)
+
 -- double negative becomes positive
 select '-1/-3'::rational;
  rational 
@@ -30,9 +37,9 @@ select '-1/-3'::rational;
 
 -- biggest values
 select '9223372036854775807/9223372036854775807'::rational;
-                rational                 
------------------------------------------
- 9223372036854775807/9223372036854775807
+ rational 
+----------
+ 1/1
 (1 row)
 
 -- SEND works
@@ -71,3 +78,25 @@ select 'sdfkjsdfj34984538'::rational;
 ERROR:  invalid input syntax for fraction: "sdfkjsdfj34984538"
 LINE 1: select 'sdfkjsdfj34984538'::rational;
                ^
+-- addition
+-- additive identity
+select '0/1'::rational + '1/2';
+ ?column? 
+----------
+ 1/2
+(1 row)
+
+-- additive inverse
+select '1/2'::rational + '-1/2';
+ ?column? 
+----------
+ 0/1
+(1 row)
+
+-- just regular
+select '1/2'::rational + '1/2';
+ ?column? 
+----------
+ 1/1
+(1 row)
+

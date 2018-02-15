@@ -8,6 +8,8 @@ select '1/3'::rational;
 select '-1/3'::rational;
 -- moves negative value from denom to numer
 select '1/-3'::rational;
+-- don't move negative if it would overflow
+select '1/-9223372036854775808'::rational;
 -- double negative becomes positive
 select '-1/-3'::rational;
 -- biggest values
@@ -27,3 +29,12 @@ select '1'::rational;
 -- no garbage
 select ''::rational;
 select 'sdfkjsdfj34984538'::rational;
+
+-- addition
+
+-- additive identity
+select '0/1'::rational + '1/2';
+-- additive inverse
+select '1/2'::rational + '-1/2';
+-- just regular
+select '1/2'::rational + '1/2';
