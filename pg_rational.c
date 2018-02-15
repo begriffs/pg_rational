@@ -18,7 +18,7 @@
   #define mul_int64_overflow __builtin_smulll_overflow
 #endif
 
-#define SMALLEST_INT64 (-9223372036854775808)
+#define SMALLEST_INT64 (-9223372036854775807 - 1)
 
 PG_MODULE_MAGIC;
 

@@ -38,3 +38,5 @@ select '0/1'::rational + '1/2';
 select '1/2'::rational + '-1/2';
 -- just regular
 select '1/2'::rational + '1/2';
+-- overflow (sqrt(max)+1)/1 + 1/sqrt(max)
+select '3037000501/1'::rational + '1/3037000500';
