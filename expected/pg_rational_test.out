@@ -7,39 +7,17 @@ select '1/3'::rational;
  1/3
 (1 row)
 
--- interprets negative numerator
+-- can parse negatives
 select '-1/3'::rational;
  rational 
 ----------
  -1/3
 (1 row)
 
--- moves negative value from denom to numer
 select '1/-3'::rational;
  rational 
 ----------
  -1/3
-(1 row)
-
--- don't move negative if it would overflow
-select '1/-9223372036854775808'::rational;
-        rational        
-------------------------
- 1/-9223372036854775808
-(1 row)
-
--- double negative becomes positive
-select '-1/-3'::rational;
- rational 
-----------
- 1/3
-(1 row)
-
--- biggest values
-select '9223372036854775807/9223372036854775807'::rational;
-                rational                 
------------------------------------------
- 9223372036854775807/9223372036854775807
 (1 row)
 
 -- SEND works
@@ -78,6 +56,42 @@ select 'sdfkjsdfj34984538'::rational;
 ERROR:  invalid input syntax for fraction: "sdfkjsdfj34984538"
 LINE 1: select 'sdfkjsdfj34984538'::rational;
                ^
+-- simplification
+-- double negative becomes positive
+select rational_simplify('-1/-3');
+ rational_simplify 
+-------------------
+ 1/3
+(1 row)
+
+-- don't move negative if it would overflow
+select rational_simplify('1/-9223372036854775808');
+   rational_simplify    
+------------------------
+ 1/-9223372036854775808
+(1 row)
+
+-- biggest value reduces
+select rational_simplify('9223372036854775807/9223372036854775807');
+ rational_simplify 
+-------------------
+ 1/1
+(1 row)
+
+-- smallest value reduces
+select rational_simplify('-9223372036854775808/-9223372036854775808');
+ rational_simplify 
+-------------------
+ 1/1
+(1 row)
+
+-- idempotent on simplified expression
+select rational_simplify('1/1');
+ rational_simplify 
+-------------------
+ 1/1
+(1 row)
+
 -- addition
 -- additive identity
 select '0/1'::rational + '1/2';
