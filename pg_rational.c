@@ -91,6 +91,14 @@ rational_recv(PG_FUNCTION_ARGS) {
 
   result->numer = pq_getmsgint64(buf);
   result->denom = pq_getmsgint64(buf);
+  if(result->denom == 0) {
+    ereport(ERROR,
+      (errcode(ERRCODE_DIVISION_BY_ZERO),
+       errmsg("fraction cannot have zero denominator: \""
+        INT64_FORMAT "/" INT64_FORMAT "\"",
+        result->numer, result->denom));
+    );
+  }
   PG_RETURN_POINTER(result);
 }
 
