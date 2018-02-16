@@ -50,3 +50,16 @@ select '1/2'::rational + '1/2';
 select '9223372036854775807/9223372036854775807'::rational + '1/1';
 -- overflow (sqrt(max)+1)/1 + 1/sqrt(max)
 select '3037000501/1'::rational + '1/3037000500';
+
+-- multiplication
+
+-- multiplicative identity
+select '1/1'::rational * '1/2';
+-- multiplicative inverse
+select '2/1'::rational * '1/2';
+-- just regular
+select '5/8'::rational * '3/5';
+-- forcing intermediate simplification
+select '9223372036854775807/9223372036854775807'::rational * '2/2';
+-- overflow
+select '3037000501/3037000500'::rational * '3037000501/3037000500';

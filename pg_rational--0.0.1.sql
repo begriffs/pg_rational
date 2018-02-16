@@ -40,6 +40,18 @@ CREATE OPERATOR + (
   commutator = +
 );
 
+CREATE FUNCTION rational_mul(rational, rational)
+RETURNS rational
+AS '$libdir/pg_rational'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR * (
+  leftarg = rational,
+  rightarg = rational,
+  procedure = rational_mul,
+  commutator = *
+);
+
 CREATE FUNCTION rational_simplify(rational)
 RETURNS rational
 AS '$libdir/pg_rational'
