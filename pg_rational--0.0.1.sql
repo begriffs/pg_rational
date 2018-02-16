@@ -39,3 +39,8 @@ CREATE OPERATOR + (
   procedure = rational_add,
   commutator = +
 );
+
+CREATE FUNCTION rational_simplify(rational)
+RETURNS rational
+AS '$libdir/pg_rational'
+LANGUAGE C IMMUTABLE STRICT;

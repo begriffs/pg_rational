@@ -9,6 +9,7 @@
 #include "postgres.h"
 #include "fmgr.h"
 #include "libpq/pqformat.h" /* needed for send/recv functions */
+#include <limits.h>
 
 #ifdef HAVE_LONG_INT_64
   #define add_int64_overflow __builtin_saddl_overflow
@@ -18,8 +19,6 @@
   #define mul_int64_overflow __builtin_smulll_overflow
 #endif
 
-#define SMALLEST_INT64 (-9223372036854775807 - 1)
-
 PG_MODULE_MAGIC;
 
 typedef struct {
@@ -27,7 +26,8 @@ typedef struct {
   int64 denom;
 } Rational;
 
-static int64 positive_gcd(int64, int64);
+static int64 gcd(int64, int64);
+static bool simplify(Rational*);
 
 /***************** IO ******************/
 
@@ -64,7 +64,7 @@ rational_in(PG_FUNCTION_ARGS) {
 
   // prevent negative denominator, but do not negate the
   // smallest value -- that would produce overflow
-  if(d >= 0 || n == SMALLEST_INT64 || d == SMALLEST_INT64) {
+  if(d >= 0 || n == INT64_MIN || d == INT64_MIN) {
     result->numer = n;
     result->denom = d;
   } else {
@@ -78,11 +78,9 @@ rational_in(PG_FUNCTION_ARGS) {
 Datum
 rational_out(PG_FUNCTION_ARGS) {
   Rational *r = (Rational *)PG_GETARG_POINTER(0);
-  int64 common = positive_gcd(r->numer, r->denom);
 
   PG_RETURN_CSTRING(
-    psprintf(INT64_FORMAT "/" INT64_FORMAT,
-      r->numer / common, r->denom / common)
+    psprintf(INT64_FORMAT "/" INT64_FORMAT, r->numer, r->denom)
   );
 }
 
@@ -109,7 +107,19 @@ rational_send(PG_FUNCTION_ARGS) {
 
 /************* ARITHMETIC **************/
 
+PG_FUNCTION_INFO_V1(rational_simplify);
 PG_FUNCTION_INFO_V1(rational_add);
+
+Datum
+rational_simplify(PG_FUNCTION_ARGS) {
+  Rational *in  = (Rational *)PG_GETARG_POINTER(0);
+  Rational *out = palloc(sizeof(Rational));
+
+  memcpy(out, in, sizeof(Rational));
+  simplify(out);
+
+  PG_RETURN_POINTER(out);
+}
 
 Datum
 rational_add(PG_FUNCTION_ARGS) {
@@ -137,12 +147,30 @@ rational_add(PG_FUNCTION_ARGS) {
 
 /************** INTERNAL ***************/
 
-int64 positive_gcd(int64 a, int64 b) {
+int64 gcd(int64 a, int64 b) {
   int64 temp;
   while (b != 0) {
     temp = a % b;
     a = b;
     b = temp;
   }
-  return a >= 0 ? a : -a;
+  return a;
+}
+
+bool simplify(Rational *r) {
+  int64 common = gcd(r->numer, r->denom);
+
+  // prevent negative denominator, but do not negate the
+  // smallest value -- that would produce overflow
+  if(r->denom < 0 && r->numer != INT64_MIN && r->denom != INT64_MIN) {
+    r->numer *= -1;
+    r->denom *= -1;
+  }
+
+  if(common == 1) {
+    return false;
+  }
+  r->numer /= common;
+  r->denom /= common;
+  return true;
 }

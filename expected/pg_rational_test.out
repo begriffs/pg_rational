@@ -37,9 +37,9 @@ select '-1/-3'::rational;
 
 -- biggest values
 select '9223372036854775807/9223372036854775807'::rational;
- rational 
-----------
- 1/1
+                rational                 
+-----------------------------------------
+ 9223372036854775807/9223372036854775807
 (1 row)
 
 -- SEND works
@@ -90,14 +90,14 @@ select '0/1'::rational + '1/2';
 select '1/2'::rational + '-1/2';
  ?column? 
 ----------
- 0/1
+ 0/4
 (1 row)
 
 -- just regular
 select '1/2'::rational + '1/2';
  ?column? 
 ----------
- 1/1
+ 4/4
 (1 row)
 
 -- overflow (sqrt(max)+1)/1 + 1/sqrt(max)
