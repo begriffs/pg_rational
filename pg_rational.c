@@ -8,6 +8,7 @@
 
 #include "postgres.h"
 #include "fmgr.h"
+#include "access/hash.h"
 #include "libpq/pqformat.h" /* needed for send/recv functions */
 #include <limits.h>
 
@@ -198,6 +199,20 @@ retry_mul:
   result->denom = denom;
   PG_RETURN_POINTER(result);
 }
+
+/*************** UTILITY ***************/
+
+PG_FUNCTION_INFO_V1(rational_hash);
+
+Datum
+rational_hash(PG_FUNCTION_ARGS) {
+  return hash_any(
+    (const unsigned char *)PG_GETARG_POINTER(0),
+    sizeof(Rational)
+  );
+};
+
+/************* COMPARISON **************/
 
 /************** INTERNAL ***************/
 

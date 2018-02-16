@@ -56,3 +56,13 @@ CREATE FUNCTION rational_simplify(rational)
 RETURNS rational
 AS '$libdir/pg_rational'
 LANGUAGE C IMMUTABLE STRICT;
+
+CREATE FUNCTION rational_hash(rational)
+RETURNS integer
+AS '$libdir/pg_rational'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR CLASS hash_rational_ops
+  DEFAULT FOR TYPE rational USING hash AS
+    OPERATOR 1 = ,
+    FUNCTION 1 rational_hash(rational);
