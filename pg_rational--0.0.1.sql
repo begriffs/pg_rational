@@ -57,6 +57,114 @@ RETURNS rational
 AS '$libdir/pg_rational'
 LANGUAGE C IMMUTABLE STRICT;
 
+------------- Comparison ------------- 
+
+CREATE FUNCTION rational_eq(rational, rational)
+RETURNS boolean
+AS '$libdir/pg_rational'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+  LEFTARG = rational,
+  RIGHTARG = rational,
+  PROCEDURE = rational_eq,
+  COMMUTATOR = '=',
+  NEGATOR = '<>',
+  RESTRICT = eqsel,
+  JOIN = eqjoinsel,
+  HASHES, MERGES
+);
+
+CREATE FUNCTION rational_ne(rational, rational)
+RETURNS boolean
+AS '$libdir/pg_rational'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <> (
+  LEFTARG = rational,
+  RIGHTARG = rational,
+  PROCEDURE = rational_ne,
+  COMMUTATOR = '<>',
+  NEGATOR = '=',
+  RESTRICT = neqsel,
+  JOIN = neqjoinsel
+);
+
+CREATE FUNCTION rational_lt(rational, rational)
+RETURNS boolean
+AS '$libdir/pg_rational'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR < (
+  LEFTARG = rational,
+  RIGHTARG = rational,
+  PROCEDURE = rational_lt,
+  COMMUTATOR = > ,
+  NEGATOR = >= ,
+  RESTRICT = scalarltsel,
+  JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION rational_le(rational, rational)
+RETURNS boolean
+AS '$libdir/pg_rational'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR <= (
+  LEFTARG = rational,
+  RIGHTARG = rational,
+  PROCEDURE = rational_le,
+  COMMUTATOR = >= ,
+  NEGATOR = > ,
+  RESTRICT = scalarltsel,
+  JOIN = scalarltjoinsel
+);
+
+CREATE FUNCTION rational_gt(rational, rational)
+RETURNS boolean
+AS '$libdir/pg_rational'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR > (
+  LEFTARG = rational,
+  RIGHTARG = rational,
+  PROCEDURE = rational_gt,
+  COMMUTATOR = < ,
+  NEGATOR = <= ,
+  RESTRICT = scalargtsel,
+  JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION rational_ge(rational, rational)
+RETURNS boolean
+AS '$libdir/pg_rational'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR >= (
+  LEFTARG = rational,
+  RIGHTARG = rational,
+  PROCEDURE = rational_ge,
+  COMMUTATOR = <= ,
+  NEGATOR = < ,
+  RESTRICT = scalargtsel,
+  JOIN = scalargtjoinsel
+);
+
+CREATE FUNCTION rational_cmp(rational, rational)
+RETURNS integer
+AS '$libdir/pg_rational'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR CLASS btree_rational_ops
+DEFAULT FOR TYPE rational USING btree
+AS
+  OPERATOR 1 <  ,
+  OPERATOR 2 <= ,
+  OPERATOR 3 =  ,
+  OPERATOR 4 >= ,
+  OPERATOR 5 >  ,
+  FUNCTION 1 rational_cmp(rational, rational);
+
 CREATE FUNCTION rational_hash(rational)
 RETURNS integer
 AS '$libdir/pg_rational'

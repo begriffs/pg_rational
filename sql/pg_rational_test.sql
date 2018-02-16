@@ -63,3 +63,40 @@ select '5/8'::rational * '3/5';
 select '9223372036854775807/9223372036854775807'::rational * '2/2';
 -- overflow
 select '3037000501/3037000500'::rational * '3037000501/3037000500';
+
+-- comparison
+
+-- equal in every way
+select '1/1'::rational = '1/1';
+-- same equivalence class
+select '20/40'::rational = '22/44';
+-- negatives work too
+select '-20/40'::rational = '-22/44';
+-- forcing intermediate simplification
+select '3037000501/3037000501'::rational = '3037000501/3037000501';
+-- overflow
+select '3037000501/3037000500'::rational = '3037000501/3037000500';
+-- not everything is equal
+select '2/3'::rational = '8/5';
+
+-- negates equality
+select '1/1'::rational <> '1/1';
+-- forcing intermediate simplification
+select '3037000501/3037000501'::rational <> '3037000501/3037000501';
+-- overflow
+select '3037000501/3037000500'::rational <> '3037000501/3037000500';
+-- not equal
+select '2/3'::rational <> '8/5';
+
+-- less than
+select r
+  from unnest(ARRAY[
+      '3037000501/3037000501',
+      '0/9999999',
+      '-11/17',
+      '3/4',
+      '-1/2',
+      '5/8',
+      '6/9'
+    ]::rational[]) as r
+order by r asc;

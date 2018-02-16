@@ -28,7 +28,8 @@ typedef struct {
 } Rational;
 
 static int64 gcd(int64, int64);
-static bool simplify(Rational*);
+static bool  simplify(Rational*);
+static int32 cmp(Rational*, Rational*);
 
 /***************** IO ******************/
 
@@ -214,6 +215,62 @@ rational_hash(PG_FUNCTION_ARGS) {
 
 /************* COMPARISON **************/
 
+PG_FUNCTION_INFO_V1(rational_cmp);
+PG_FUNCTION_INFO_V1(rational_eq);
+PG_FUNCTION_INFO_V1(rational_ne);
+PG_FUNCTION_INFO_V1(rational_lt);
+PG_FUNCTION_INFO_V1(rational_le);
+PG_FUNCTION_INFO_V1(rational_gt);
+PG_FUNCTION_INFO_V1(rational_ge);
+
+Datum
+rational_cmp(PG_FUNCTION_ARGS) {
+  PG_RETURN_INT32(
+    cmp((Rational*)PG_GETARG_POINTER(0), (Rational*)PG_GETARG_POINTER(1)));
+}
+
+Datum
+rational_eq(PG_FUNCTION_ARGS) {
+  PG_RETURN_BOOL(
+    cmp((Rational*)PG_GETARG_POINTER(0), (Rational*)PG_GETARG_POINTER(1)) == 0
+  );
+}
+
+Datum
+rational_ne(PG_FUNCTION_ARGS) {
+  PG_RETURN_BOOL(
+    cmp((Rational*)PG_GETARG_POINTER(0), (Rational*)PG_GETARG_POINTER(1)) != 0
+  );
+}
+
+Datum
+rational_lt(PG_FUNCTION_ARGS) {
+  PG_RETURN_BOOL(
+    cmp((Rational*)PG_GETARG_POINTER(0), (Rational*)PG_GETARG_POINTER(1)) < 0
+  );
+}
+
+Datum
+rational_le(PG_FUNCTION_ARGS) {
+  PG_RETURN_BOOL(
+    cmp((Rational*)PG_GETARG_POINTER(0), (Rational*)PG_GETARG_POINTER(1)) <= 0
+  );
+}
+
+Datum
+rational_gt(PG_FUNCTION_ARGS) {
+  PG_RETURN_BOOL(
+    cmp((Rational*)PG_GETARG_POINTER(0), (Rational*)PG_GETARG_POINTER(1)) > 0
+  );
+}
+
+Datum
+rational_ge(PG_FUNCTION_ARGS) {
+  PG_RETURN_BOOL(
+    cmp((Rational*)PG_GETARG_POINTER(0), (Rational*)PG_GETARG_POINTER(1)) >= 0
+  );
+}
+
 /************** INTERNAL ***************/
 
 int64 gcd(int64 a, int64 b) {
@@ -240,4 +297,32 @@ bool simplify(Rational *r) {
   }
 
   return (common != 1) && (common != -1);
+}
+
+int32 cmp(Rational* a, Rational* b) {
+  Rational x, y;
+  int64 cross1, cross2;
+  bool cross1_bad, cross2_bad;
+
+  // we may modify these, so make a copy of args
+  memcpy(&x, a, sizeof(Rational));
+  memcpy(&y, b, sizeof(Rational));
+
+retry_cmp:
+  cross1_bad = mul_int64_overflow(x.numer, y.denom, &cross1);
+  cross2_bad = mul_int64_overflow(x.denom, y.numer, &cross2);
+
+  if(cross1_bad || cross2_bad) {
+    // overflow in intermediate value
+    if(!simplify(&x) && !simplify(&y)) {
+      // neither fraction could reduce, cannot proceed
+      ereport(ERROR,
+        (errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+         errmsg("intermediate value overflow in rational comparison"))
+      );
+    }
+    // the fraction(s) reduced, good for one more retry
+    goto retry_cmp;
+  }
+  return (cross1 > cross2) - (cross1 < cross2);
 }
