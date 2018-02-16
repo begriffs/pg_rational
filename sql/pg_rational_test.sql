@@ -27,6 +27,8 @@ select 'sdfkjsdfj34984538'::rational;
 
 -- double negative becomes positive
 select rational_simplify('-1/-3');
+-- works with negative value
+select rational_simplify('-3/12');
 -- don't move negative if it would overflow
 select rational_simplify('1/-9223372036854775808');
 -- biggest value reduces
