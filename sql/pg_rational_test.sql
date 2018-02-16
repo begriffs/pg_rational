@@ -88,15 +88,66 @@ select '3037000501/3037000500'::rational <> '3037000501/3037000500';
 -- not equal
 select '2/3'::rational <> '8/5';
 
--- less than
+-- lt anti-reflexive
+select '1/2'::rational < '1/2';
+-- gt anti-reflexive
+select '1/2'::rational > '1/2';
+
+-- lte
 select r
   from unnest(ARRAY[
       '3037000501/3037000501',
       '0/9999999',
       '-11/17',
+      '100/1',
       '3/4',
       '-1/2',
       '5/8',
-      '6/9'
+      '6/9',
+      '5/8'
     ]::rational[]) as r
 order by r asc;
+-- gte
+select r
+  from unnest(ARRAY[
+      '3037000501/3037000501',
+      '0/9999999',
+      '-11/17',
+      '100/1',
+      '3/4',
+      '-1/2',
+      '5/8',
+      '6/9',
+      '5/8'
+    ]::rational[]) as r
+order by r desc;
+
+-- btree
+create table rs (
+  r rational
+);
+create index rs_r_btree on rs using btree(r);
+insert into rs values ('0/7'), ('1/7'), ('2/7'), ('3/7'),
+                      ('4/7'), ('5/7'), ('6/7');
+set enable_seqscan=false;
+
+explain select * from rs where r > '1/7' and r <= '10/14';
+select * from rs where r > '1/7' and r <= '10/14';
+
+set enable_seqscan=true;
+drop table rs cascade;
+
+-- hash
+create table rs (
+  r rational
+);
+create index rs_r_hash on rs using hash(r);
+insert into rs values ('0/7'), ('1/7');
+set enable_seqscan=false;
+
+explain select * from rs where r = '0/1';
+select * from rs where r = '0/1';
+select * from rs where r = '2/7';
+
+set enable_seqscan=true;
+drop table rs cascade;

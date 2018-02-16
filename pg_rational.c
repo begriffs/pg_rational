@@ -207,10 +207,11 @@ PG_FUNCTION_INFO_V1(rational_hash);
 
 Datum
 rational_hash(PG_FUNCTION_ARGS) {
-  return hash_any(
-    (const unsigned char *)PG_GETARG_POINTER(0),
-    sizeof(Rational)
-  );
+  Rational x;
+  memcpy(&x, PG_GETARG_POINTER(0), sizeof(Rational));
+  // hash_any works at binary level, so we must simplify fraction
+  simplify(&x);
+  return hash_any((const unsigned char *)&x, sizeof(Rational));
 };
 
 /************* COMPARISON **************/
