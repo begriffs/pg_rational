@@ -123,23 +123,37 @@ rational_simplify(PG_FUNCTION_ARGS) {
 
 Datum
 rational_add(PG_FUNCTION_ARGS) {
-  Rational *x = (Rational *)PG_GETARG_POINTER(0),
-           *y = (Rational *)PG_GETARG_POINTER(1);
+  Rational x, y;
   int64 xnyd, ynxd, numer, denom;
   bool nxyd_bad, ynxd_bad, numer_bad, denom_bad;
-  Rational *result = palloc(sizeof(Rational));
+  Rational *result;
 
-  nxyd_bad  = mul_int64_overflow(x->numer, y->denom, &xnyd);
-  ynxd_bad  = mul_int64_overflow(y->numer, x->denom, &ynxd);
-  numer_bad = add_int64_overflow(xnyd,     ynxd,     &numer);
-  denom_bad = mul_int64_overflow(x->denom, y->denom, &denom);
+  // we may modify these, so make a copy of args
+  memcpy(&x, PG_GETARG_POINTER(0), sizeof(Rational));
+  memcpy(&y, PG_GETARG_POINTER(1), sizeof(Rational));
 
-  if(nxyd_bad || ynxd_bad || numer_bad || denom_bad) {
-    ereport(ERROR,
-      (errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
-       errmsg("intermediate value overflow in rational addition"))
-    );
+  while(true) {
+    nxyd_bad  = mul_int64_overflow(x.numer, y.denom, &xnyd);
+    ynxd_bad  = mul_int64_overflow(y.numer, x.denom, &ynxd);
+    numer_bad = add_int64_overflow(xnyd,    ynxd,    &numer);
+    denom_bad = mul_int64_overflow(x.denom, y.denom, &denom);
+
+    if(nxyd_bad || ynxd_bad || numer_bad || denom_bad) {
+      // overflow in intermediate value
+      if(!simplify(&x) && !simplify(&y)) {
+        // neither fraction could reduce, cannot proceed
+        ereport(ERROR,
+          (errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+           errmsg("intermediate value overflow in rational addition"))
+        );
+      }
+      // the fraction(s) reduced, continue loop for last time
+    } else {
+      // no overflow, answer is good
+      break;
+    }
   }
+  result = palloc(sizeof(Rational));
   result->numer = numer;
   result->denom = denom;
   PG_RETURN_POINTER(result);

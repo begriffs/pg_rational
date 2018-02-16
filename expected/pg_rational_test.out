@@ -114,6 +114,13 @@ select '1/2'::rational + '1/2';
  4/4
 (1 row)
 
+-- forcing intermediate simplification
+select '9223372036854775807/9223372036854775807'::rational + '1/1';
+ ?column? 
+----------
+ 2/1
+(1 row)
+
 -- overflow (sqrt(max)+1)/1 + 1/sqrt(max)
 select '3037000501/1'::rational + '1/3037000500';
 ERROR:  intermediate value overflow in rational addition
