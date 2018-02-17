@@ -38,6 +38,9 @@ static Rational* add(Rational*, Rational*);
 PG_FUNCTION_INFO_V1(rational_in);
 PG_FUNCTION_INFO_V1(rational_out);
 PG_FUNCTION_INFO_V1(rational_recv);
+PG_FUNCTION_INFO_V1(rational_create);
+PG_FUNCTION_INFO_V1(rational_embed32);
+PG_FUNCTION_INFO_V1(rational_embed64);
 PG_FUNCTION_INFO_V1(rational_send);
 
 Datum
@@ -103,6 +106,44 @@ rational_recv(PG_FUNCTION_ARGS) {
         result->numer, result->denom))
     );
   }
+  PG_RETURN_POINTER(result);
+}
+
+Datum
+rational_create(PG_FUNCTION_ARGS) {
+  int64 n = PG_GETARG_INT64(0),
+        d = PG_GETARG_INT64(1);
+  Rational *result = palloc(sizeof(Rational));
+
+  if(d == 0) {
+    ereport(ERROR,
+      (errcode(ERRCODE_DIVISION_BY_ZERO),
+       errmsg("fraction cannot have zero denominator: \""
+        INT64_FORMAT "/" INT64_FORMAT "\"", n, d))
+    );
+  }
+  result->numer = n;
+  result->denom = d;
+  PG_RETURN_POINTER(result);
+}
+
+Datum
+rational_embed32(PG_FUNCTION_ARGS) {
+  int32 n = PG_GETARG_INT32(0);
+  Rational *result = palloc(sizeof(Rational));
+
+  result->numer = n;
+  result->denom = 1;
+  PG_RETURN_POINTER(result);
+}
+
+Datum
+rational_embed64(PG_FUNCTION_ARGS) {
+  int64 n = PG_GETARG_INT64(0);
+  Rational *result = palloc(sizeof(Rational));
+
+  result->numer = n;
+  result->denom = 1;
   PG_RETURN_POINTER(result);
 }
 

@@ -1,15 +1,23 @@
 create extension pg_rational;
 
--- input
+-- I/O
 
 -- can parse a simple fraction
 select '1/3'::rational;
 -- can parse negatives
 select '-1/3'::rational;
 select '1/-3'::rational;
-
 -- SEND works
 select rational_send('1/3');
+
+-- casting
+
+-- tuple helper
+select (1,2)::ratt = '1/2'::rational;
+-- int
+select 42 = '42/1'::rational;
+-- bigint
+select 42::bigint = '42/1'::rational;
 
 -- too big
 select '9223372036854775808/9223372036854775807'::rational;

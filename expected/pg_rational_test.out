@@ -1,5 +1,5 @@
 create extension pg_rational;
--- input
+-- I/O
 -- can parse a simple fraction
 select '1/3'::rational;
  rational 
@@ -25,6 +25,28 @@ select rational_send('1/3');
            rational_send            
 ------------------------------------
  \x00000000000000010000000000000003
+(1 row)
+
+-- casting
+-- tuple helper
+select (1,2)::ratt = '1/2'::rational;
+ ?column? 
+----------
+ t
+(1 row)
+
+-- int
+select 42 = '42/1'::rational;
+ ?column? 
+----------
+ t
+(1 row)
+
+-- bigint
+select 42::bigint = '42/1'::rational;
+ ?column? 
+----------
+ t
 (1 row)
 
 -- too big
