@@ -74,6 +74,11 @@ select '9223372036854775807/9223372036854775807'::rational * '2/2';
 -- overflow
 select '3037000501/3037000500'::rational * '3037000501/3037000500';
 
+-- division
+
+select 1::rational / 3;
+select '2/3'::rational / '2/3';
+
 -- negation
 
 -- flips sign of numerator

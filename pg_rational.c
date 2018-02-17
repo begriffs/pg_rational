@@ -32,6 +32,7 @@ static bool      simplify(Rational*);
 static int32     cmp(Rational*, Rational*);
 static void      neg(Rational *);
 static Rational* add(Rational*, Rational*);
+static Rational* mul(Rational*, Rational*);
 
 /***************** IO ******************/
 
@@ -164,6 +165,7 @@ PG_FUNCTION_INFO_V1(rational_simplify);
 PG_FUNCTION_INFO_V1(rational_add);
 PG_FUNCTION_INFO_V1(rational_sub);
 PG_FUNCTION_INFO_V1(rational_mul);
+PG_FUNCTION_INFO_V1(rational_div);
 PG_FUNCTION_INFO_V1(rational_neg);
 
 Datum
@@ -199,35 +201,24 @@ rational_sub(PG_FUNCTION_ARGS) {
 Datum
 rational_mul(PG_FUNCTION_ARGS) {
   Rational x, y;
-  int64 numer, denom;
-  bool numer_bad, denom_bad;
-  Rational *result;
-
-  // we may modify these, so make a copy of args
   memcpy(&x, PG_GETARG_POINTER(0), sizeof(Rational));
   memcpy(&y, PG_GETARG_POINTER(1), sizeof(Rational));
 
-retry_mul:
-  numer_bad = mul_int64_overflow(x.numer, y.numer, &numer);
-  denom_bad = mul_int64_overflow(x.denom, y.denom, &denom);
+  PG_RETURN_POINTER(mul(&x,&y));
+}
 
-  if(numer_bad || denom_bad) {
-    // overflow in intermediate value
-    if(!simplify(&x) && !simplify(&y)) {
-      // neither fraction could reduce, cannot proceed
-      ereport(ERROR,
-        (errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
-         errmsg("intermediate value overflow in rational multiplication"))
-      );
-    }
-    // the fraction(s) reduced, good for one more retry
-    goto retry_mul;
-  }
+Datum
+rational_div(PG_FUNCTION_ARGS) {
+  Rational x, y, *result;
+  int64 tmp;
 
-  result = palloc(sizeof(Rational));
-  result->numer = numer;
-  result->denom = denom;
-  PG_RETURN_POINTER(result);
+  memcpy(&x, PG_GETARG_POINTER(0), sizeof(Rational));
+  memcpy(&y, PG_GETARG_POINTER(1), sizeof(Rational));
+  tmp = y.numer;
+  y.numer = y.denom;
+  y.denom = tmp;
+
+  PG_RETURN_POINTER(mul(&x,&y));
 }
 
 Datum
@@ -407,6 +398,34 @@ retry_add:
     }
     // the fraction(s) reduced, good for one more retry
     goto retry_add;
+  }
+
+  result = palloc(sizeof(Rational));
+  result->numer = numer;
+  result->denom = denom;
+  return result;
+}
+
+Rational* mul(Rational* x, Rational* y) {
+  int64 numer, denom;
+  bool numer_bad, denom_bad;
+  Rational *result;
+
+retry_mul:
+  numer_bad = mul_int64_overflow(x->numer, y->numer, &numer);
+  denom_bad = mul_int64_overflow(x->denom, y->denom, &denom);
+
+  if(numer_bad || denom_bad) {
+    // overflow in intermediate value
+    if(!simplify(x) && !simplify(y)) {
+      // neither fraction could reduce, cannot proceed
+      ereport(ERROR,
+        (errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+         errmsg("intermediate value overflow in rational multiplication"))
+      );
+    }
+    // the fraction(s) reduced, good for one more retry
+    goto retry_mul;
   }
 
   result = palloc(sizeof(Rational));

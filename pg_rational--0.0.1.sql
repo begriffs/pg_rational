@@ -97,6 +97,17 @@ CREATE OPERATOR * (
   commutator = *
 );
 
+CREATE FUNCTION rational_div(rational, rational)
+RETURNS rational
+AS '$libdir/pg_rational'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR / (
+  leftarg = rational,
+  rightarg = rational,
+  procedure = rational_div
+);
+
 CREATE FUNCTION rational_neg(rational)
 RETURNS rational
 AS '$libdir/pg_rational'
