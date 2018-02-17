@@ -30,6 +30,7 @@ typedef struct {
 static int64 gcd(int64, int64);
 static bool  simplify(Rational*);
 static int32 cmp(Rational*, Rational*);
+static void  neg(Rational *);
 
 /***************** IO ******************/
 
@@ -206,18 +207,7 @@ Datum
 rational_neg(PG_FUNCTION_ARGS) {
   Rational *out = palloc(sizeof(Rational));
   memcpy(out, PG_GETARG_POINTER(0), sizeof(Rational));
-
-  if(out->numer == INT64_MIN) {
-    simplify(out);
-  }
-
-  if(out->numer == INT64_MIN) {
-    // denom can't be MIN too or fraction would be 1/1
-    out->denom *= -1;
-  } else {
-    // the normal case
-    out->numer *= -1;
-  }
+  neg(out);
 
   PG_RETURN_POINTER(out);
 }
@@ -347,4 +337,20 @@ retry_cmp:
     goto retry_cmp;
   }
   return (cross1 > cross2) - (cross1 < cross2);
+}
+
+void neg(Rational *r) {
+  if(r->numer == INT64_MIN) {
+    simplify(r);
+
+    // check again
+    if(r->numer == INT64_MIN) {
+      // denom can't be MIN too or fraction would
+      // have previously simplified to 1/1
+      r->denom *= -1;
+      return;
+    }
+  }
+
+  r->numer *= -1;
 }
