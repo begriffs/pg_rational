@@ -233,7 +233,7 @@ rational_hash(PG_FUNCTION_ARGS) {
   // hash_any works at binary level, so we must simplify fraction
   simplify(&x);
   return hash_any((const unsigned char *)&x, sizeof(Rational));
-};
+}
 
 /************* COMPARISON **************/
 
