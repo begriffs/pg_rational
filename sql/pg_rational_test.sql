@@ -75,6 +75,17 @@ select -('-9223372036854775808/1'::rational);
 select -('1/-9223372036854775808'::rational);
 select -('-9223372036854775808/-9223372036854775808'::rational);
 
+-- subtraction
+
+-- just regular
+select '1/2'::rational - '1/2';
+-- can go negative
+select '1/2'::rational - '1/1';
+-- forcing intermediate simplification
+select '9223372036854775807/9223372036854775807'::rational - '100/100';
+-- overflow (sqrt(max)+1)/1 - 1/sqrt(max)
+select '3037000501/1'::rational - '1/3037000500';
+
 -- comparison
 
 -- equal in every way
