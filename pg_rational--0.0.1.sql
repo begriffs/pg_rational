@@ -52,6 +52,16 @@ CREATE OPERATOR * (
   commutator = *
 );
 
+CREATE FUNCTION rational_neg(rational)
+RETURNS rational
+AS '$libdir/pg_rational'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR - (
+  rightarg = rational,
+  procedure = rational_neg
+);
+
 CREATE FUNCTION rational_simplify(rational)
 RETURNS rational
 AS '$libdir/pg_rational'

@@ -163,6 +163,40 @@ select '9223372036854775807/9223372036854775807'::rational * '2/2';
 -- overflow
 select '3037000501/3037000500'::rational * '3037000501/3037000500';
 ERROR:  intermediate value overflow in rational multiplication
+-- negation
+-- flips sign of numerator
+select -('1/2'::rational);
+ ?column? 
+----------
+ -1/2
+(1 row)
+
+-- flips back
+select -('-1/2'::rational);
+ ?column? 
+----------
+ 1/2
+(1 row)
+
+-- overflow not possible
+select -('-9223372036854775808/1'::rational);
+        ?column?         
+-------------------------
+ -9223372036854775808/-1
+(1 row)
+
+select -('1/-9223372036854775808'::rational);
+        ?column?         
+-------------------------
+ -1/-9223372036854775808
+(1 row)
+
+select -('-9223372036854775808/-9223372036854775808'::rational);
+ ?column? 
+----------
+ -1/1
+(1 row)
+
 -- comparison
 -- equal in every way
 select '1/1'::rational = '1/1';

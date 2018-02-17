@@ -98,7 +98,7 @@ rational_recv(PG_FUNCTION_ARGS) {
       (errcode(ERRCODE_DIVISION_BY_ZERO),
        errmsg("fraction cannot have zero denominator: \""
         INT64_FORMAT "/" INT64_FORMAT "\"",
-        result->numer, result->denom));
+        result->numer, result->denom))
     );
   }
   PG_RETURN_POINTER(result);
@@ -120,6 +120,7 @@ rational_send(PG_FUNCTION_ARGS) {
 PG_FUNCTION_INFO_V1(rational_simplify);
 PG_FUNCTION_INFO_V1(rational_add);
 PG_FUNCTION_INFO_V1(rational_mul);
+PG_FUNCTION_INFO_V1(rational_neg);
 
 Datum
 rational_simplify(PG_FUNCTION_ARGS) {
@@ -199,6 +200,26 @@ retry_mul:
   result->numer = numer;
   result->denom = denom;
   PG_RETURN_POINTER(result);
+}
+
+Datum
+rational_neg(PG_FUNCTION_ARGS) {
+  Rational *out = palloc(sizeof(Rational));
+  memcpy(out, PG_GETARG_POINTER(0), sizeof(Rational));
+
+  if(out->numer == INT64_MIN) {
+    simplify(out);
+  }
+
+  if(out->numer == INT64_MIN) {
+    // denom can't be MIN too or fraction would be 1/1
+    out->denom *= -1;
+  } else {
+    // the normal case
+    out->numer *= -1;
+  }
+
+  PG_RETURN_POINTER(out);
 }
 
 /*************** UTILITY ***************/
