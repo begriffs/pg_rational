@@ -71,6 +71,13 @@ select rational_simplify('-3/12');
  -1/4
 (1 row)
 
+-- dodge the INT64_MIN/-1 mistake
+select rational_simplify('-9223372036854775808/9223372036854775807');
+            rational_simplify             
+------------------------------------------
+ -9223372036854775808/9223372036854775807
+(1 row)
+
 -- don't move negative if it would overflow
 select rational_simplify('1/-9223372036854775808');
    rational_simplify    
@@ -197,6 +204,31 @@ select -('-9223372036854775808/-9223372036854775808'::rational);
  -1/1
 (1 row)
 
+-- subtraction
+-- just regular
+select '1/2'::rational - '1/2';
+ ?column? 
+----------
+ 0/4
+(1 row)
+
+-- can go negative
+select '1/2'::rational - '1/1';
+ ?column? 
+----------
+ -1/2
+(1 row)
+
+-- forcing intermediate simplification
+select '9223372036854775807/9223372036854775807'::rational - '100/100';
+ ?column? 
+----------
+ 0/100
+(1 row)
+
+-- overflow (sqrt(max)+1)/1 - 1/sqrt(max)
+select '3037000501/1'::rational - '1/3037000500';
+ERROR:  intermediate value overflow in rational addition
 -- comparison
 -- equal in every way
 select '1/1'::rational = '1/1';

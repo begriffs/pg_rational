@@ -29,6 +29,8 @@ select 'sdfkjsdfj34984538'::rational;
 select rational_simplify('-1/-3');
 -- works with negative value
 select rational_simplify('-3/12');
+-- dodge the INT64_MIN/-1 mistake
+select rational_simplify('-9223372036854775808/9223372036854775807');
 -- don't move negative if it would overflow
 select rational_simplify('1/-9223372036854775808');
 -- biggest value reduces

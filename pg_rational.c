@@ -284,8 +284,11 @@ int64 gcd(int64 a, int64 b) {
 bool simplify(Rational *r) {
   int64 common = gcd(r->numer, r->denom);
 
-  r->numer /= common;
-  r->denom /= common;
+  // tricky: avoid overflow from (INT64_MIN / -1)
+  if(common != -1 || (r->numer != INT64_MIN && r->denom != INT64_MIN)) {
+    r->numer /= common;
+    r->denom /= common;
+  }
 
   // prevent negative denominator, but do not negate the
   // smallest value -- that would produce overflow
