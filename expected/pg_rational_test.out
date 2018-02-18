@@ -293,6 +293,19 @@ select '3037000501/3037000500'::rational = '3037000501/3037000500';
  t
 (1 row)
 
+-- high precision
+select '1/9223372036854775807'::rational = '1/9223372036854775806';
+ ?column? 
+----------
+ f
+(1 row)
+
+select (1.0::double precision)/9223372036854775807 = 1.0/9223372036854775806;
+ ?column? 
+----------
+ t
+(1 row)
+
 -- not everything is equal
 select '2/3'::rational = '8/5';
  ?column? 

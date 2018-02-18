@@ -111,6 +111,9 @@ select '20/40'::rational = '22/44';
 select '-20/40'::rational = '-22/44';
 -- overflow not possible
 select '3037000501/3037000500'::rational = '3037000501/3037000500';
+-- high precision
+select '1/9223372036854775807'::rational = '1/9223372036854775806';
+select (1.0::double precision)/9223372036854775807 = 1.0/9223372036854775806;
 -- not everything is equal
 select '2/3'::rational = '8/5';
 
