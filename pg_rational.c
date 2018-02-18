@@ -335,8 +335,8 @@ bool simplify(Rational *r) {
 int32 cmp(Rational* a, Rational* b) {
   // Overflow is not an option, we need a total order
   // so that btree indices do not die
-  __int128_t cross1 = a->numer * b->denom,
-             cross2 = a->denom * b->numer;
+  __int128_t cross1 = (__int128_t)a->numer * (__int128_t)b->denom,
+             cross2 = (__int128_t)a->denom * (__int128_t)b->numer;
   return (cross1 > cross2) - (cross1 < cross2);
 }
 
