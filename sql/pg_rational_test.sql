@@ -109,18 +109,14 @@ select '1/1'::rational = '1/1';
 select '20/40'::rational = '22/44';
 -- negatives work too
 select '-20/40'::rational = '-22/44';
--- forcing intermediate simplification
-select '3037000501/3037000501'::rational = '3037000501/3037000501';
--- overflow
+-- overflow not possible
 select '3037000501/3037000500'::rational = '3037000501/3037000500';
 -- not everything is equal
 select '2/3'::rational = '8/5';
 
 -- negates equality
 select '1/1'::rational <> '1/1';
--- forcing intermediate simplification
-select '3037000501/3037000501'::rational <> '3037000501/3037000501';
--- overflow
+-- overflow not possible
 select '3037000501/3037000500'::rational <> '3037000501/3037000500';
 -- not equal
 select '2/3'::rational <> '8/5';
@@ -129,6 +125,8 @@ select '2/3'::rational <> '8/5';
 select '1/2'::rational < '1/2';
 -- gt anti-reflexive
 select '1/2'::rational > '1/2';
+-- overflow not possible
+select '2/3'::rational > '-9223372036854775808/9223372036854775807';
 
 -- lte
 select r
@@ -137,6 +135,7 @@ select r
       '0/9999999',
       '-11/17',
       '100/1',
+      '-9223372036854775808/9223372036854775807',
       '3/4',
       '-1/2',
       '5/8',
@@ -151,6 +150,7 @@ select r
       '0/9999999',
       '-11/17',
       '100/1',
+      '-9223372036854775808/9223372036854775807',
       '3/4',
       '-1/2',
       '5/8',

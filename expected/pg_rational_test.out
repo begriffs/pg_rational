@@ -286,16 +286,13 @@ select '-20/40'::rational = '-22/44';
  t
 (1 row)
 
--- forcing intermediate simplification
-select '3037000501/3037000501'::rational = '3037000501/3037000501';
+-- overflow not possible
+select '3037000501/3037000500'::rational = '3037000501/3037000500';
  ?column? 
 ----------
  t
 (1 row)
 
--- overflow
-select '3037000501/3037000500'::rational = '3037000501/3037000500';
-ERROR:  intermediate value overflow in rational comparison
 -- not everything is equal
 select '2/3'::rational = '8/5';
  ?column? 
@@ -310,16 +307,13 @@ select '1/1'::rational <> '1/1';
  f
 (1 row)
 
--- forcing intermediate simplification
-select '3037000501/3037000501'::rational <> '3037000501/3037000501';
+-- overflow not possible
+select '3037000501/3037000500'::rational <> '3037000501/3037000500';
  ?column? 
 ----------
  f
 (1 row)
 
--- overflow
-select '3037000501/3037000500'::rational <> '3037000501/3037000500';
-ERROR:  intermediate value overflow in rational comparison
 -- not equal
 select '2/3'::rational <> '8/5';
  ?column? 
@@ -341,6 +335,13 @@ select '1/2'::rational > '1/2';
  f
 (1 row)
 
+-- overflow not possible
+select '2/3'::rational > '-9223372036854775808/9223372036854775807';
+ ?column? 
+----------
+ t
+(1 row)
+
 -- lte
 select r
   from unnest(ARRAY[
@@ -348,6 +349,7 @@ select r
       '0/9999999',
       '-11/17',
       '100/1',
+      '-9223372036854775808/9223372036854775807',
       '3/4',
       '-1/2',
       '5/8',
@@ -355,10 +357,11 @@ select r
       '5/8'
     ]::rational[]) as r
 order by r asc;
-           r           
------------------------
- -11/17
+                    r                     
+------------------------------------------
  -1/2
+ -9223372036854775808/9223372036854775807
+ -11/17
  0/9999999
  5/8
  5/8
@@ -366,7 +369,7 @@ order by r asc;
  3/4
  3037000501/3037000501
  100/1
-(9 rows)
+(10 rows)
 
 -- gte
 select r
@@ -375,6 +378,7 @@ select r
       '0/9999999',
       '-11/17',
       '100/1',
+      '-9223372036854775808/9223372036854775807',
       '3/4',
       '-1/2',
       '5/8',
@@ -382,8 +386,8 @@ select r
       '5/8'
     ]::rational[]) as r
 order by r desc;
-           r           
------------------------
+                    r                     
+------------------------------------------
  100/1
  3037000501/3037000501
  3/4
@@ -391,9 +395,10 @@ order by r desc;
  5/8
  5/8
  0/9999999
+ -9223372036854775808/9223372036854775807
  -1/2
  -11/17
-(9 rows)
+(10 rows)
 
 -- btree
 create table rs (

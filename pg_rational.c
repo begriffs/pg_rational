@@ -209,7 +209,7 @@ rational_mul(PG_FUNCTION_ARGS) {
 
 Datum
 rational_div(PG_FUNCTION_ARGS) {
-  Rational x, y, *result;
+  Rational x, y;
   int64 tmp;
 
   memcpy(&x, PG_GETARG_POINTER(0), sizeof(Rational));
@@ -333,30 +333,10 @@ bool simplify(Rational *r) {
 }
 
 int32 cmp(Rational* a, Rational* b) {
-  Rational x, y;
-  int64 cross1, cross2;
-  bool cross1_bad, cross2_bad;
-
-  // we may modify these, so make a copy of args
-  memcpy(&x, a, sizeof(Rational));
-  memcpy(&y, b, sizeof(Rational));
-
-retry_cmp:
-  cross1_bad = mul_int64_overflow(x.numer, y.denom, &cross1);
-  cross2_bad = mul_int64_overflow(x.denom, y.numer, &cross2);
-
-  if(cross1_bad || cross2_bad) {
-    // overflow in intermediate value
-    if(!simplify(&x) && !simplify(&y)) {
-      // neither fraction could reduce, cannot proceed
-      ereport(ERROR,
-        (errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
-         errmsg("intermediate value overflow in rational comparison"))
-      );
-    }
-    // the fraction(s) reduced, good for one more retry
-    goto retry_cmp;
-  }
+  // Overflow is not an option, we need a total order
+  // so that btree indices do not die
+  __int128_t cross1 = a->numer * b->denom,
+             cross2 = a->denom * b->numer;
   return (cross1 > cross2) - (cross1 < cross2);
 }
 
