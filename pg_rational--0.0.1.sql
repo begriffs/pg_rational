@@ -123,6 +123,11 @@ RETURNS rational
 AS '$libdir/pg_rational'
 LANGUAGE C IMMUTABLE STRICT;
 
+CREATE FUNCTION rational_intermediate(rational, rational)
+RETURNS rational
+AS '$libdir/pg_rational'
+LANGUAGE C IMMUTABLE;
+
 ------------- Comparison ------------- 
 
 CREATE FUNCTION rational_eq(rational, rational)

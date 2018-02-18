@@ -195,3 +195,22 @@ select * from rs where r = '2/7';
 
 set enable_seqscan=true;
 drop table rs cascade;
+
+-- stern-brocot intermediates
+
+-- random example
+select rational_intermediate('15/16', 1);
+select rational_intermediate('15/16', 1)
+  between '15/16'::rational and 1;
+select rational_intermediate('44320/39365', '77200/12184');
+select rational_intermediate('44320/39365', '77200/12184')
+  between '44320/39365'::rational and '77200/12184';
+-- cutting it closer
+select rational_intermediate('72650000/72659999', 1);
+select rational_intermediate('72650000/72659999', 1)
+  between '72650000/72659999'::rational and 1;
+-- unbounded upper limit produces least greater integer
+select rational_intermediate('1/3', NULL);
+select rational_intermediate('3/2', NULL);
+-- though not the other direction
+select rational_intermediate(NULL, '15/16');

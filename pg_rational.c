@@ -33,6 +33,7 @@ static int32     cmp(Rational*, Rational*);
 static void      neg(Rational *);
 static Rational* add(Rational*, Rational*);
 static Rational* mul(Rational*, Rational*);
+static void      mediant(Rational* x, Rational* y, Rational *m);
 
 /***************** IO ******************/
 
@@ -233,6 +234,7 @@ rational_neg(PG_FUNCTION_ARGS) {
 /*************** UTILITY ***************/
 
 PG_FUNCTION_INFO_V1(rational_hash);
+PG_FUNCTION_INFO_V1(rational_intermediate);
 
 Datum
 rational_hash(PG_FUNCTION_ARGS) {
@@ -241,6 +243,53 @@ rational_hash(PG_FUNCTION_ARGS) {
   // hash_any works at binary level, so we must simplify fraction
   simplify(&x);
   return hash_any((const unsigned char *)&x, sizeof(Rational));
+}
+
+Datum
+rational_intermediate(PG_FUNCTION_ARGS) {
+  Rational x, y, // arguments
+           lo = {0,1},
+           hi = {1,0}, // yes, an internal use of 1/0
+           *med = palloc(sizeof(Rational));
+
+  if(PG_ARGISNULL(0) && PG_ARGISNULL(1)) {
+    PG_RETURN_NULL();
+  }
+
+  // x = coalesce(lo, arg[0])
+  // y = coalesce(hi, arg[1])
+  memcpy(&x,
+    PG_ARGISNULL(0) ? &lo : (Rational*)PG_GETARG_POINTER(0),
+    sizeof(Rational));
+  memcpy(&y,
+    PG_ARGISNULL(1) ? &hi : (Rational*)PG_GETARG_POINTER(1),
+    sizeof(Rational));
+
+  if(cmp(&x, &lo) < 0 || cmp(&y, &lo) < 0) {
+    ereport(ERROR,
+      (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+       errmsg("arguments must be non-negative"))
+    );
+  }
+
+  if(cmp(&x, &y) >= 0) {
+    ereport(ERROR,
+      (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+       errmsg("first argument must be strictly smaller than second"))
+    );
+  }
+
+  while(true) {
+    mediant(&lo, &hi, med);
+    if(cmp(med, &x) < 1) {
+      memcpy(&lo, med, sizeof(Rational));
+    } else if(cmp(med, &y) > -1) {
+      memcpy(&hi, med, sizeof(Rational));
+    } else {
+      break;
+    }
+  }
+  PG_RETURN_POINTER(med);
 }
 
 /************* COMPARISON **************/
@@ -412,4 +461,9 @@ retry_mul:
   result->numer = numer;
   result->denom = denom;
   return result;
+}
+
+void mediant(Rational* x, Rational* y, Rational *m) {
+  m->numer = x->numer + y->numer;
+  m->denom = x->denom + y->denom;
 }
