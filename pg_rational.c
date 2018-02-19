@@ -1,11 +1,3 @@
-/* Based on
- * https://www.postgresql.org/docs/10/static/xtypes.html
- * http://big-elephants.com/2015-10/writing-postgres-extensions-part-i/
- * http://big-elephants.com/2015-10/writing-postgres-extensions-part-ii/
- * https://www.postgresql.org/docs/10/static/source.html
- * https://www.postgresql.org/docs/10/static/extend-extensions.html
- * */
-
 #include "postgres.h"
 #include "fmgr.h"
 #include "access/hash.h"
@@ -464,6 +456,10 @@ retry_mul:
 }
 
 void mediant(Rational* x, Rational* y, Rational *m) {
+  // Rational_intermediate sends fractions with small numers and denoms,
+  // and slowly builds up. The search will take forever before we ever
+  // get close to arithmetic overflow in this function, so I don't guard
+  // it here.
   m->numer = x->numer + y->numer;
   m->denom = x->denom + y->denom;
 }
