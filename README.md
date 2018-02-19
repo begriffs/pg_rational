@@ -134,3 +134,4 @@ This is my first PostgreSQL extension, and these resources were helpful in learn
 * https://www.postgresql.org/docs/10/static/xtypes.html
 * http://big-elephants.com/2015-10/writing-postgres-extensions-part-i/
 * https://wiki.postgresql.org/wiki/User-specified\_ordering\_with\_fractions
+* #postgresql and ##c channels on freenode
