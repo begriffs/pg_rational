@@ -56,7 +56,19 @@ insert into todos (what) values
   ('try it'),
   ('profit?');
 
--- put trying between installing and reading
+select * from todos order by prio asc;
+/*
+┌──────┬───────────────────┐
+│ prio │       what        │
+├──────┼───────────────────┤
+│ 1/1  │ install extension │
+│ 2/1  │ read about it     │
+│ 3/1  │ try it            │
+│ 4/1  │ profit?           │
+└──────┴───────────────────┘
+*/
+
+-- put "try" between "install" and "read"
 update todos
 set prio = rational_intermediate(1,2)
 where prio = 3;
@@ -73,7 +85,7 @@ select * from todos order by prio asc;
 └──────┴───────────────────┘
 */
 
--- put reading back between installing and trying
+-- put "read" back between "install" and "try"
 update todos
 set prio = rational_intermediate(1,'3/2')
 where prio = 2;
