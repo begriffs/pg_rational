@@ -39,7 +39,7 @@ select rational_simplify('36/12');
 -- => 3/1
 ```
 
-Reorder items without renumbering.
+Reorder items without renumbering surrounding items.
 
 ```sql
 create sequence todos_seq;
