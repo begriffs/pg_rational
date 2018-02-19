@@ -45,7 +45,7 @@ Reorder items without renumbering surrounding items.
 create sequence todos_seq;
 
 create table todos (
-  prio rational primary key
+  prio rational unique
     default nextval('todos_seq'),
   what text not null
 );
