@@ -1,4 +1,5 @@
 create extension pg_rational;
+set client_min_messages to error;
 
 -- I/O
 

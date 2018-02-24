@@ -1,4 +1,5 @@
 create extension pg_rational;
+set client_min_messages to error;
 -- I/O
 -- can parse a simple fraction
 select '1/3'::rational;
@@ -454,7 +455,6 @@ create table rs (
   r rational
 );
 create index rs_r_hash on rs using hash(r);
-WARNING:  hash indexes are not WAL-logged and their use is discouraged
 insert into rs values ('0/7'), ('1/7');
 set enable_seqscan=false;
 explain select * from rs where r = '0/1';
