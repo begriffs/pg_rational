@@ -197,6 +197,40 @@ select * from rs where r = '2/7';
 set enable_seqscan=true;
 drop table rs cascade;
 
+-- aggregates
+
+select min(r)
+  from unnest(ARRAY[
+      '100/1',
+      NULL,
+      '-11/17',
+      '-1/1'
+    ]::rational[]) as r;
+
+select max(r)
+  from unnest(ARRAY[
+      '100/1',
+      NULL,
+      '-11/17',
+      '-1/1'
+    ]::rational[]) as r;
+
+select max(r)
+  from unnest(ARRAY[
+      NULL, NULL, NULL
+    ]::rational[]) as r;
+
+select rational_simplify(sum(r))
+  from unnest(ARRAY[
+      '1/1',  '1/2', NULL,
+      '-3/2', '1/16'
+    ]::rational[]) as r;
+
+select sum(r)
+  from unnest(ARRAY[
+      NULL, NULL, NULL
+    ]::rational[]) as r;
+
 -- stern-brocot intermediates
 
 -- random example

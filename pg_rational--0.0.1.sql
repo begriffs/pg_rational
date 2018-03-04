@@ -65,7 +65,7 @@ CREATE CAST (integer AS rational)
 CREATE FUNCTION rational_add(rational, rational)
 RETURNS rational
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE OPERATOR + (
   leftarg = rational,
@@ -245,3 +245,40 @@ CREATE OPERATOR CLASS hash_rational_ops
   DEFAULT FOR TYPE rational USING hash AS
     OPERATOR 1 = ,
     FUNCTION 1 rational_hash(rational);
+
+
+------------- Aggregates ------------- 
+
+CREATE FUNCTION rational_smaller(rational, rational)
+RETURNS rational
+AS '$libdir/pg_rational'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE FUNCTION rational_larger(rational, rational)
+RETURNS rational
+AS '$libdir/pg_rational'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE AGGREGATE min(rational)  (
+    SFUNC = rational_smaller,
+    STYPE = rational,
+    SORTOP = <,
+    COMBINEFUNC = rational_smaller,
+	PARALLEL = SAFE
+);
+
+CREATE AGGREGATE max(rational)  (
+    SFUNC = rational_larger,
+    STYPE = rational,
+    SORTOP = >,
+    COMBINEFUNC = rational_larger,
+	PARALLEL = SAFE
+);
+
+CREATE AGGREGATE sum (rational)
+(
+    SFUNC = rational_add,
+    STYPE = rational,
+    COMBINEFUNC = rational_add,
+	PARALLEL = SAFE
+);

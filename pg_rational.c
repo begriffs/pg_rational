@@ -343,6 +343,9 @@ PG_FUNCTION_INFO_V1(rational_le);
 PG_FUNCTION_INFO_V1(rational_gt);
 PG_FUNCTION_INFO_V1(rational_ge);
 
+PG_FUNCTION_INFO_V1(rational_smaller);
+PG_FUNCTION_INFO_V1(rational_larger);
+
 Datum
 rational_cmp(PG_FUNCTION_ARGS)
 {
@@ -391,6 +394,23 @@ rational_ge(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(
 				   cmp((Rational *) PG_GETARG_POINTER(0), (Rational *) PG_GETARG_POINTER(1)) >= 0);
 }
+
+Datum
+rational_smaller(PG_FUNCTION_ARGS)
+{
+	Rational	*a = (Rational *)PG_GETARG_POINTER(0),
+				*b = (Rational *)PG_GETARG_POINTER(1);
+	PG_RETURN_POINTER(cmp(a,b) < 0 ? a : b);
+}
+
+Datum
+rational_larger(PG_FUNCTION_ARGS)
+{
+	Rational	*a = (Rational *)PG_GETARG_POINTER(0),
+				*b = (Rational *)PG_GETARG_POINTER(1);
+	PG_RETURN_POINTER(cmp(a,b) > 0 ? a : b);
+}
+
 
 /*
  ************** INTERNAL ***************
