@@ -3,22 +3,22 @@
 CREATE FUNCTION rational_in(cstring)
 RETURNS rational
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE FUNCTION rational_out(rational)
 RETURNS cstring
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE FUNCTION rational_recv(internal)
 RETURNS rational
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE FUNCTION rational_send(rational)
 RETURNS bytea
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE TYPE rational (
   INPUT   = rational_in,
@@ -31,7 +31,7 @@ CREATE TYPE rational (
 CREATE FUNCTION rational_create(bigint, bigint)
 RETURNS rational
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE TYPE ratt AS (n bigint, d bigint);
 CREATE FUNCTION tuple_to_rational(ratt)
@@ -46,12 +46,12 @@ CREATE CAST (ratt AS rational)
 CREATE FUNCTION rational_embed32(integer)
 RETURNS rational
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE FUNCTION rational_embed64(bigint)
 RETURNS rational
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 
 CREATE CAST (bigint AS rational)
@@ -77,7 +77,7 @@ CREATE OPERATOR + (
 CREATE FUNCTION rational_sub(rational, rational)
 RETURNS rational
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE OPERATOR - (
   leftarg = rational,
@@ -88,7 +88,7 @@ CREATE OPERATOR - (
 CREATE FUNCTION rational_mul(rational, rational)
 RETURNS rational
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE OPERATOR * (
   leftarg = rational,
@@ -100,7 +100,7 @@ CREATE OPERATOR * (
 CREATE FUNCTION rational_div(rational, rational)
 RETURNS rational
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE OPERATOR / (
   leftarg = rational,
@@ -111,7 +111,7 @@ CREATE OPERATOR / (
 CREATE FUNCTION rational_neg(rational)
 RETURNS rational
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE OPERATOR - (
   rightarg = rational,
@@ -121,7 +121,7 @@ CREATE OPERATOR - (
 CREATE FUNCTION rational_simplify(rational)
 RETURNS rational
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE FUNCTION rational_intermediate(rational, rational)
 RETURNS rational
@@ -133,7 +133,7 @@ LANGUAGE C IMMUTABLE;
 CREATE FUNCTION rational_eq(rational, rational)
 RETURNS boolean
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE OPERATOR = (
   LEFTARG = rational,
@@ -149,7 +149,7 @@ CREATE OPERATOR = (
 CREATE FUNCTION rational_ne(rational, rational)
 RETURNS boolean
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE OPERATOR <> (
   LEFTARG = rational,
@@ -164,7 +164,7 @@ CREATE OPERATOR <> (
 CREATE FUNCTION rational_lt(rational, rational)
 RETURNS boolean
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE OPERATOR < (
   LEFTARG = rational,
@@ -179,7 +179,7 @@ CREATE OPERATOR < (
 CREATE FUNCTION rational_le(rational, rational)
 RETURNS boolean
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE OPERATOR <= (
   LEFTARG = rational,
@@ -194,7 +194,7 @@ CREATE OPERATOR <= (
 CREATE FUNCTION rational_gt(rational, rational)
 RETURNS boolean
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE OPERATOR > (
   LEFTARG = rational,
@@ -209,7 +209,7 @@ CREATE OPERATOR > (
 CREATE FUNCTION rational_ge(rational, rational)
 RETURNS boolean
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE OPERATOR >= (
   LEFTARG = rational,
@@ -224,7 +224,7 @@ CREATE OPERATOR >= (
 CREATE FUNCTION rational_cmp(rational, rational)
 RETURNS integer
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE OPERATOR CLASS btree_rational_ops
 DEFAULT FOR TYPE rational USING btree
