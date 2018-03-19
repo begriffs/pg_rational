@@ -25,15 +25,15 @@ CREATE TYPE rational (
   OUTPUT  = rational_out,
   RECEIVE = rational_recv,
   SEND    = rational_send,
-  INTERNALLENGTH = 16
+  INTERNALLENGTH = 8
 );
 
-CREATE FUNCTION rational_create(bigint, bigint)
+CREATE FUNCTION rational_create(integer, integer)
 RETURNS rational
 AS '$libdir/pg_rational'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
-CREATE TYPE ratt AS (n bigint, d bigint);
+CREATE TYPE ratt AS (n integer, d integer);
 CREATE FUNCTION tuple_to_rational(ratt)
 RETURNS rational AS $$
   SELECT rational_create($1.n,$1.d);
@@ -43,23 +43,13 @@ CREATE CAST (ratt AS rational)
   WITH FUNCTION tuple_to_rational(ratt)
   AS IMPLICIT;
 
-CREATE FUNCTION rational_embed32(integer)
+CREATE FUNCTION rational_embed(integer)
 RETURNS rational
 AS '$libdir/pg_rational'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-
-CREATE FUNCTION rational_embed64(bigint)
-RETURNS rational
-AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-
-
-CREATE CAST (bigint AS rational)
-  WITH FUNCTION rational_embed64(bigint)
-  AS IMPLICIT;
 
 CREATE CAST (integer AS rational)
-  WITH FUNCTION rational_embed32(integer)
+  WITH FUNCTION rational_embed(integer)
   AS IMPLICIT;
 
 CREATE FUNCTION rational_add(rational, rational)

@@ -17,11 +17,9 @@ select rational_send('1/3');
 select (1,2)::ratt = '1/2'::rational;
 -- int
 select 42 = '42/1'::rational;
--- bigint
-select 42::bigint = '42/1'::rational;
 
 -- too big
-select '9223372036854775808/9223372036854775807'::rational;
+select '2147483648/2147483647'::rational;
 -- no spaces
 select '1 /3'::rational;
 -- no zero denominator
@@ -30,6 +28,9 @@ select '1/0'::rational;
 select '1'::rational;
 -- no garbage
 select ''::rational;
+select '/'::rational;
+select '2/'::rational;
+select '/2'::rational;
 select 'sdfkjsdfj34984538'::rational;
 
 -- simplification
@@ -38,14 +39,14 @@ select 'sdfkjsdfj34984538'::rational;
 select rational_simplify('-1/-3');
 -- works with negative value
 select rational_simplify('-3/12');
--- dodge the INT64_MIN/-1 mistake
-select rational_simplify('-9223372036854775808/9223372036854775807');
+-- dodge the INT32_MIN/-1 mistake
+select rational_simplify('-2147483648/2147483647');
 -- don't move negative if it would overflow
-select rational_simplify('1/-9223372036854775808');
+select rational_simplify('1/-2147483648');
 -- biggest value reduces
-select rational_simplify('9223372036854775807/9223372036854775807');
+select rational_simplify('2147483647/2147483647');
 -- smallest value reduces
-select rational_simplify('-9223372036854775808/-9223372036854775808');
+select rational_simplify('-2147483648/-2147483648');
 -- idempotent on simplified expression
 select rational_simplify('1/1');
 
@@ -58,9 +59,9 @@ select '1/2'::rational + '-1/2';
 -- just regular
 select '1/2'::rational + '1/2';
 -- forcing intermediate simplification
-select '9223372036854775807/9223372036854775807'::rational + '1/1';
+select '2147483647/2147483647'::rational + '1/1';
 -- overflow (sqrt(max)+1)/1 + 1/sqrt(max)
-select '3037000501/1'::rational + '1/3037000500';
+select '46342/1'::rational + '1/46341';
 
 -- multiplication
 
@@ -71,9 +72,9 @@ select '2/1'::rational * '1/2';
 -- just regular
 select '5/8'::rational * '3/5';
 -- forcing intermediate simplification
-select '9223372036854775807/9223372036854775807'::rational * '2/2';
+select '2147483647/2147483647'::rational * '2/2';
 -- overflow
-select '3037000501/3037000500'::rational * '3037000501/3037000500';
+select '46342/46341'::rational * '46341/46342';
 
 -- division
 
@@ -87,9 +88,9 @@ select -('1/2'::rational);
 -- flips back
 select -('-1/2'::rational);
 -- overflow not possible
-select -('-9223372036854775808/1'::rational);
-select -('1/-9223372036854775808'::rational);
-select -('-9223372036854775808/-9223372036854775808'::rational);
+select -('-2147483648/1'::rational);
+select -('1/-2147483648'::rational);
+select -('-2147483648/-2147483648'::rational);
 
 -- subtraction
 
@@ -98,9 +99,9 @@ select '1/2'::rational - '1/2';
 -- can go negative
 select '1/2'::rational - '1/1';
 -- forcing intermediate simplification
-select '9223372036854775807/9223372036854775807'::rational - '100/100';
+select '2147483647/2147483647'::rational - '100/100';
 -- overflow (sqrt(max)+1)/1 - 1/sqrt(max)
-select '3037000501/1'::rational - '1/3037000500';
+select '46342/1'::rational - '1/46341';
 
 -- comparison
 
@@ -111,17 +112,18 @@ select '20/40'::rational = '22/44';
 -- negatives work too
 select '-20/40'::rational = '-22/44';
 -- overflow not possible
-select '3037000501/3037000500'::rational = '3037000501/3037000500';
+select '46342/46341'::rational = '46342/46341';
 -- high precision
-select '1/9223372036854775807'::rational = '1/9223372036854775806';
-select (1.0::double precision)/9223372036854775807 = 1.0/9223372036854775806;
+select '1/2147483647'::rational = '1/2147483646';
+select '1/3'::rational * 3 = 1;
+select 1.0/3.0 = 1.0;
 -- not everything is equal
 select '2/3'::rational = '8/5';
 
 -- negates equality
 select '1/1'::rational <> '1/1';
 -- overflow not possible
-select '3037000501/3037000500'::rational <> '3037000501/3037000500';
+select '46342/46341'::rational <> '46342/46341';
 -- not equal
 select '2/3'::rational <> '8/5';
 
@@ -130,17 +132,16 @@ select '1/2'::rational < '1/2';
 -- gt anti-reflexive
 select '1/2'::rational > '1/2';
 -- overflow not possible
-select '1/9223372036854775807'::rational < '2/9223372036854775807';
+select '1/2147483647'::rational < '2/2147483647';
 
 -- lte
 select r
   from unnest(ARRAY[
-      '3037000501/3037000501',
+      '303700050/303700050',
       '-2/1',
       '0/9999999',
       '-11/17',
       '100/1',
-      '-9223372036854775808/9223372036854775807',
       '3/4',
       '-1/2',
       '-1/1',
@@ -152,12 +153,11 @@ order by r asc;
 -- gte
 select r
   from unnest(ARRAY[
-      '3037000501/3037000501',
+      '303700050/303700050',
       '-2/1',
       '0/9999999',
       '-11/17',
       '100/1',
-      '-9223372036854775808/9223372036854775807',
       '3/4',
       '-1/2',
       '-1/1',
@@ -240,10 +240,6 @@ select rational_intermediate('15/16', 1)
 select rational_intermediate('44320/39365', '77200/12184');
 select rational_intermediate('44320/39365', '77200/12184')
   between '44320/39365'::rational and '77200/12184';
--- cutting it closer
-select rational_intermediate('72650000/72659999', 1);
-select rational_intermediate('72650000/72659999', 1)
-  between '72650000/72659999'::rational and 1;
 -- unbounded upper limit produces least greater integer
 select rational_intermediate('1/3', NULL);
 select rational_intermediate('3/2', NULL);

@@ -4,28 +4,20 @@
 #include "libpq/pqformat.h"		/* needed for send/recv functions */
 #include <limits.h>
 
-#ifdef HAVE_LONG_INT_64
-#define add_int64_overflow __builtin_saddl_overflow
-#define mul_int64_overflow __builtin_smull_overflow
-#elif
-#define add_int64_overflow __builtin_saddll_overflow
-#define mul_int64_overflow __builtin_smulll_overflow
-#endif
-
 PG_MODULE_MAGIC;
 
 typedef struct
 {
-	int64		numer;
-	int64		denom;
-} Rational;
+	int32		numer;
+	int32		denom;
+}			Rational;
 
-static int64 gcd(int64, int64);
+static int32 gcd(int32, int32);
 static bool simplify(Rational *);
 static int32 cmp(Rational *, Rational *);
 static void neg(Rational *);
-static Rational *add(Rational *, Rational *);
-static Rational *mul(Rational *, Rational *);
+static Rational * add(Rational *, Rational *);
+static Rational * mul(Rational *, Rational *);
 static void mediant(Rational *, Rational *, Rational *);
 
 /*
@@ -36,47 +28,62 @@ PG_FUNCTION_INFO_V1(rational_in);
 PG_FUNCTION_INFO_V1(rational_out);
 PG_FUNCTION_INFO_V1(rational_recv);
 PG_FUNCTION_INFO_V1(rational_create);
-PG_FUNCTION_INFO_V1(rational_embed32);
-PG_FUNCTION_INFO_V1(rational_embed64);
+PG_FUNCTION_INFO_V1(rational_embed);
 PG_FUNCTION_INFO_V1(rational_send);
 
 Datum
 rational_in(PG_FUNCTION_ARGS)
 {
-	char	   *s = PG_GETARG_CSTRING(0);
-	int64		n,
+	char	   *s = PG_GETARG_CSTRING(0),
+			   *after;
+	long long	n,
 				d;
 	Rational   *result = palloc(sizeof(Rational));
 
-	errno = 0;
-	if (sscanf(s, INT64_FORMAT "/" INT64_FORMAT, &n, &d) != 2)
+	if (*s == '/')
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-				 errmsg("invalid input syntax for fraction: \"%s\"", s)));
+				 errmsg("Expecting value before '/'")));
 
-	if (errno == ERANGE)
+	n = strtoll(s, &after, 10);
+	if (*after != '/')
 		ereport(ERROR,
-				(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
-				 errmsg("numerator or denominator outside valid int64 value: \"%s\"", s)));
+				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+				 errmsg("Expecting '/' but found '%c'", *after)));
+	if (*(++after) == '\0')
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+				 errmsg("Expecting value after '/' but got '\\0'")));
+
+	d = strtoll(after, &after, 10);
+	if (*after != '\0')
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+				 errmsg("Expecting '\\0' but found '%c'", *after)));
 
 	if (d == 0)
 		ereport(ERROR,
 				(errcode(ERRCODE_DIVISION_BY_ZERO),
-				 errmsg("fraction cannot have zero denominator: \"%s\"", s)));
+				 errmsg("fraction cannot have zero denominator")));
+
+	if (n < INT32_MIN || n > INT32_MAX || d < INT32_MIN || d > INT32_MAX)
+		ereport(ERROR,
+				(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+				 errmsg("numerator or denominator outside valid int32 value")));
 
 	/*
 	 * prevent negative denominator, but do not negate the smallest value --
 	 * that would produce overflow
 	 */
-	if (d >= 0 || n == INT64_MIN || d == INT64_MIN)
+	if (d >= 0 || n == INT32_MIN || d == INT32_MIN)
 	{
-		result->numer = n;
-		result->denom = d;
+		result->numer = (int32) n;
+		result->denom = (int32) d;
 	}
 	else
 	{
-		result->numer = -n;
-		result->denom = -d;
+		result->numer = (int32) -n;
+		result->denom = (int32) -d;
 	}
 
 	PG_RETURN_POINTER(result);
@@ -87,7 +94,7 @@ rational_out(PG_FUNCTION_ARGS)
 {
 	Rational   *r = (Rational *) PG_GETARG_POINTER(0);
 
-	PG_RETURN_CSTRING(psprintf(INT64_FORMAT "/" INT64_FORMAT, r->numer, r->denom));
+	PG_RETURN_CSTRING(psprintf("%d/%d", r->numer, r->denom));
 }
 
 Datum
@@ -96,14 +103,13 @@ rational_recv(PG_FUNCTION_ARGS)
 	StringInfo	buf = (StringInfo) PG_GETARG_POINTER(0);
 	Rational   *result = palloc(sizeof(Rational));
 
-	result->numer = pq_getmsgint64(buf);
-	result->denom = pq_getmsgint64(buf);
+	result->numer = pq_getmsgint(buf, sizeof(int32));
+	result->denom = pq_getmsgint(buf, sizeof(int32));
 
 	if (result->denom == 0)
 		ereport(ERROR,
 				(errcode(ERRCODE_DIVISION_BY_ZERO),
-				 errmsg("fraction cannot have zero denominator: \""
-						INT64_FORMAT "/" INT64_FORMAT "\"",
+				 errmsg("fraction cannot have zero denominator: \"%d/%d\"",
 						result->numer, result->denom)));
 
 	PG_RETURN_POINTER(result);
@@ -112,15 +118,14 @@ rational_recv(PG_FUNCTION_ARGS)
 Datum
 rational_create(PG_FUNCTION_ARGS)
 {
-	int64		n = PG_GETARG_INT64(0),
-				d = PG_GETARG_INT64(1);
+	int32		n = PG_GETARG_INT32(0),
+				d = PG_GETARG_INT32(1);
 	Rational   *result = palloc(sizeof(Rational));
 
 	if (d == 0)
 		ereport(ERROR,
 				(errcode(ERRCODE_DIVISION_BY_ZERO),
-				 errmsg("fraction cannot have zero denominator: \""
-						INT64_FORMAT "/" INT64_FORMAT "\"", n, d)));
+				 errmsg("fraction cannot have zero denominator: \"%d/%d\"", n, d)));
 
 	result->numer = n;
 	result->denom = d;
@@ -129,21 +134,9 @@ rational_create(PG_FUNCTION_ARGS)
 }
 
 Datum
-rational_embed32(PG_FUNCTION_ARGS)
+rational_embed(PG_FUNCTION_ARGS)
 {
 	int32		n = PG_GETARG_INT32(0);
-	Rational   *result = palloc(sizeof(Rational));
-
-	result->numer = n;
-	result->denom = 1;
-
-	PG_RETURN_POINTER(result);
-}
-
-Datum
-rational_embed64(PG_FUNCTION_ARGS)
-{
-	int64		n = PG_GETARG_INT64(0);
 	Rational   *result = palloc(sizeof(Rational));
 
 	result->numer = n;
@@ -159,8 +152,8 @@ rational_send(PG_FUNCTION_ARGS)
 	StringInfoData buf;
 
 	pq_begintypsend(&buf);
-	pq_sendint64(&buf, r->numer);
-	pq_sendint64(&buf, r->denom);
+	pq_sendint(&buf, r->numer, sizeof(int32));
+	pq_sendint(&buf, r->denom, sizeof(int32));
 
 	PG_RETURN_BYTEA_P(pq_endtypsend(&buf));
 }
@@ -230,7 +223,7 @@ rational_div(PG_FUNCTION_ARGS)
 {
 	Rational	x,
 				y;
-	int64		tmp;
+	int32		tmp;
 
 	memcpy(&x, PG_GETARG_POINTER(0), sizeof(Rational));
 	memcpy(&y, PG_GETARG_POINTER(1), sizeof(Rational));
@@ -398,17 +391,19 @@ rational_ge(PG_FUNCTION_ARGS)
 Datum
 rational_smaller(PG_FUNCTION_ARGS)
 {
-	Rational	*a = (Rational *)PG_GETARG_POINTER(0),
-				*b = (Rational *)PG_GETARG_POINTER(1);
-	PG_RETURN_POINTER(cmp(a,b) < 0 ? a : b);
+	Rational   *a = (Rational *) PG_GETARG_POINTER(0),
+			   *b = (Rational *) PG_GETARG_POINTER(1);
+
+	PG_RETURN_POINTER(cmp(a, b) < 0 ? a : b);
 }
 
 Datum
 rational_larger(PG_FUNCTION_ARGS)
 {
-	Rational	*a = (Rational *)PG_GETARG_POINTER(0),
-				*b = (Rational *)PG_GETARG_POINTER(1);
-	PG_RETURN_POINTER(cmp(a,b) > 0 ? a : b);
+	Rational   *a = (Rational *) PG_GETARG_POINTER(0),
+			   *b = (Rational *) PG_GETARG_POINTER(1);
+
+	PG_RETURN_POINTER(cmp(a, b) > 0 ? a : b);
 }
 
 
@@ -416,10 +411,10 @@ rational_larger(PG_FUNCTION_ARGS)
  ************** INTERNAL ***************
  */
 
-int64
-gcd(int64 a, int64 b)
+int32
+gcd(int32 a, int32 b)
 {
-	int64		temp;
+	int32		temp;
 
 	while (b != 0)
 	{
@@ -432,14 +427,14 @@ gcd(int64 a, int64 b)
 }
 
 bool
-simplify(Rational *r)
+simplify(Rational * r)
 {
-	int64		common = gcd(r->numer, r->denom);
+	int32		common = gcd(r->numer, r->denom);
 
 	/*
-	 * tricky: avoid overflow from (INT64_MIN / -1)
+	 * tricky: avoid overflow from (INT32_MIN / -1)
 	 */
-	if (common != -1 || (r->numer != INT64_MIN && r->denom != INT64_MIN))
+	if (common != -1 || (r->numer != INT32_MIN && r->denom != INT32_MIN))
 	{
 		r->numer /= common;
 		r->denom /= common;
@@ -449,7 +444,7 @@ simplify(Rational *r)
 	 * prevent negative denominator, but do not negate the smallest value --
 	 * that would produce overflow
 	 */
-	if (r->denom < 0 && r->numer != INT64_MIN && r->denom != INT64_MIN)
+	if (r->denom < 0 && r->numer != INT32_MIN && r->denom != INT32_MIN)
 	{
 		r->numer *= -1;
 		r->denom *= -1;
@@ -458,29 +453,29 @@ simplify(Rational *r)
 }
 
 int32
-cmp(Rational *a, Rational *b)
+cmp(Rational * a, Rational * b)
 {
 	/*
 	 * Overflow is not an option, we need a total order so that btree indices
-	 * do not die
+	 * do not die. Hence do the arithmetic in 64 bits.
 	 */
-	__int128_t	cross1 = (__int128_t) a->numer * (__int128_t) b->denom,
-				cross2 = (__int128_t) a->denom * (__int128_t) b->numer;
+	int64		cross1 = (int64) a->numer * (int64) b->denom,
+				cross2 = (int64) a->denom * (int64) b->numer;
 
 	return (cross1 > cross2) - (cross1 < cross2);
 }
 
 void
-neg(Rational *r)
+neg(Rational * r)
 {
-	if (r->numer == INT64_MIN)
+	if (r->numer == INT32_MIN)
 	{
 		simplify(r);
 
 		/*
 		 * check again
 		 */
-		if (r->numer == INT64_MIN)
+		if (r->numer == INT32_MIN)
 		{
 			/*
 			 * denom can't be MIN too or fraction would have previously
@@ -494,9 +489,9 @@ neg(Rational *r)
 }
 
 Rational *
-add(Rational *x, Rational *y)
+add(Rational * x, Rational * y)
 {
-	int64		xnyd,
+	int32		xnyd,
 				ynxd,
 				numer,
 				denom;
@@ -507,10 +502,10 @@ add(Rational *x, Rational *y)
 	Rational   *result;
 
 retry_add:
-	nxyd_bad = mul_int64_overflow(x->numer, y->denom, &xnyd);
-	ynxd_bad = mul_int64_overflow(y->numer, x->denom, &ynxd);
-	numer_bad = add_int64_overflow(xnyd, ynxd, &numer);
-	denom_bad = mul_int64_overflow(x->denom, y->denom, &denom);
+	nxyd_bad = __builtin_smul_overflow(x->numer, y->denom, &xnyd);
+	ynxd_bad = __builtin_smul_overflow(y->numer, x->denom, &ynxd);
+	numer_bad = __builtin_sadd_overflow(xnyd, ynxd, &numer);
+	denom_bad = __builtin_smul_overflow(x->denom, y->denom, &denom);
 
 	if (nxyd_bad || ynxd_bad || numer_bad || denom_bad)
 	{
@@ -533,17 +528,17 @@ retry_add:
 }
 
 Rational *
-mul(Rational *x, Rational *y)
+mul(Rational * x, Rational * y)
 {
-	int64		numer,
+	int32		numer,
 				denom;
 	bool		numer_bad,
 				denom_bad;
 	Rational   *result;
 
 retry_mul:
-	numer_bad = mul_int64_overflow(x->numer, y->numer, &numer);
-	denom_bad = mul_int64_overflow(x->denom, y->denom, &denom);
+	numer_bad = __builtin_smul_overflow(x->numer, y->numer, &numer);
+	denom_bad = __builtin_smul_overflow(x->denom, y->denom, &denom);
 
 	if (numer_bad || denom_bad)
 	{
@@ -566,7 +561,7 @@ retry_mul:
 }
 
 void
-mediant(Rational *x, Rational *y, Rational *m)
+mediant(Rational * x, Rational * y, Rational * m)
 {
 	/*
 	 * Rational_intermediate sends fractions with small numers and denoms, and

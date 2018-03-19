@@ -1,12 +1,12 @@
 ## Precise fractions for PostgreSQL
 
 An efficient custom type. Perfect for exact arithmetic or user-specified
-table row ordering. Holds values as big as a bigint, with matching
+table row ordering. Holds values as big as an integer, with matching
 precision in the denominator.
 
 ### Features
 
-* Stores fractions in exactly 128 bits (two 64-bit integers)
+* Stores fractions in exactly 64 bits (same size as float)
 * Written in C for high performance
 * Detects and halts arithmetic overflow for correctness
 * Uses native CPU instructions for fast overflow detection
