@@ -37,6 +37,14 @@ select 1 + (i,i+1)::ratt from generate_series(1,5) as i;
 -- simplify if desired
 select rational_simplify('36/12');
 -- => 3/1
+
+-- convert float to rational
+select 0.263157894737::float::rational;
+-- => 5/19
+
+-- convert rational to float
+select '-1/2'::rational::float;
+-- => -0.5
 ```
 
 Reorder items without renumbering surrounding items.

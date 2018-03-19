@@ -5,8 +5,18 @@ RETURNS rational
 AS '$libdir/pg_rational'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
+CREATE FUNCTION rational_in_float(float8)
+RETURNS rational
+AS '$libdir/pg_rational'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
 CREATE FUNCTION rational_out(rational)
 RETURNS cstring
+AS '$libdir/pg_rational'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE FUNCTION rational_out_float(rational)
+RETURNS float8
 AS '$libdir/pg_rational'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
@@ -41,6 +51,14 @@ $$ LANGUAGE SQL;
 
 CREATE CAST (ratt AS rational)
   WITH FUNCTION tuple_to_rational(ratt)
+  AS IMPLICIT;
+
+CREATE CAST (float8 AS rational)
+  WITH FUNCTION rational_in_float(float8)
+  AS IMPLICIT;
+
+CREATE CAST (rational as float8)
+  WITH FUNCTION rational_out_float(rational)
   AS IMPLICIT;
 
 CREATE FUNCTION rational_embed(integer)

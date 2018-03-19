@@ -18,6 +18,17 @@ select (1,2)::ratt = '1/2'::rational;
 -- int
 select 42 = '42/1'::rational;
 
+-- from float
+select 0.263157894737::float::rational;
+select 3.141592625359::float::rational;
+select 0.606557377049::float::rational;
+select -0.5::float::rational;
+
+-- to float
+select '1/2'::rational::float;
+select '1/3'::rational::float;
+select '-1/2'::rational::float;
+
 -- too big
 select '2147483648/2147483647'::rational;
 -- no spaces

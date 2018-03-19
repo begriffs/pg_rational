@@ -3,6 +3,7 @@
 #include "access/hash.h"
 #include "libpq/pqformat.h"		/* needed for send/recv functions */
 #include <limits.h>
+#include <math.h>
 
 PG_MODULE_MAGIC;
 
@@ -25,7 +26,9 @@ static void mediant(Rational *, Rational *, Rational *);
  */
 
 PG_FUNCTION_INFO_V1(rational_in);
+PG_FUNCTION_INFO_V1(rational_in_float);
 PG_FUNCTION_INFO_V1(rational_out);
+PG_FUNCTION_INFO_V1(rational_out_float);
 PG_FUNCTION_INFO_V1(rational_recv);
 PG_FUNCTION_INFO_V1(rational_create);
 PG_FUNCTION_INFO_V1(rational_embed);
@@ -49,7 +52,7 @@ rational_in(PG_FUNCTION_ARGS)
 	if (*after != '/')
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-				 errmsg("Expecting '/' but found '%c'", *after)));
+				 errmsg("Expecting '/' after number but found '%c'", *after)));
 	if (*(++after) == '\0')
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
@@ -89,12 +92,63 @@ rational_in(PG_FUNCTION_ARGS)
 	PG_RETURN_POINTER(result);
 }
 
+/*
+  This function taken from John Kennedy's paper, "Algorithm To Convert a
+  Decimal to a Fraction." Translated from Pascal.
+*/
+Datum
+rational_in_float(PG_FUNCTION_ARGS)
+{
+	float8		target = PG_GETARG_FLOAT8(0),
+				z,
+				prev_denom,
+				error;
+	int32		temp,
+				sign;
+	Rational   *result = palloc(sizeof(Rational));
+
+	if (target == floor(target))
+	{
+		result->numer = floor(target);
+		result->denom = 1;
+		PG_RETURN_POINTER(result);
+	}
+
+	sign = target < 0.0 ? -1 : 1;
+	target = fabs(target);
+
+	z = target;
+	prev_denom = 0;
+	result->denom = 1;
+	do
+	{
+		z = 1.0 / (z - floor(z));
+		temp = result->denom;
+		result->denom = result->denom * floor(z) + prev_denom;
+		prev_denom = temp;
+		result->numer = round(target * result->denom);
+
+		error = fabs(target - ((float8) result->numer / (float8) result->denom));
+	} while (z != floor(z) && error >= 1e-12);
+
+	result->numer *= sign;
+	PG_RETURN_POINTER(result);
+}
+
 Datum
 rational_out(PG_FUNCTION_ARGS)
 {
 	Rational   *r = (Rational *) PG_GETARG_POINTER(0);
 
 	PG_RETURN_CSTRING(psprintf("%d/%d", r->numer, r->denom));
+}
+
+Datum
+rational_out_float(PG_FUNCTION_ARGS)
+{
+	Rational   *r = (Rational *) PG_GETARG_POINTER(0);
+
+	PG_RETURN_FLOAT8((float8) r->numer / (float8) r->denom);
 }
 
 Datum
@@ -251,6 +305,7 @@ rational_neg(PG_FUNCTION_ARGS)
 
 PG_FUNCTION_INFO_V1(rational_hash);
 PG_FUNCTION_INFO_V1(rational_intermediate);
+PG_FUNCTION_INFO_V1(rational_intermediate_float);
 
 Datum
 rational_hash(PG_FUNCTION_ARGS)
@@ -277,9 +332,7 @@ rational_intermediate(PG_FUNCTION_ARGS)
 			   *med = palloc(sizeof(Rational));
 
 	if (PG_ARGISNULL(0) && PG_ARGISNULL(1))
-	{
 		PG_RETURN_NULL();
-	}
 
 	/*
 	 * x = coalesce(lo, arg[0]) y = coalesce(hi, arg[1])
@@ -292,36 +345,29 @@ rational_intermediate(PG_FUNCTION_ARGS)
 		   sizeof(Rational));
 
 	if (cmp(&x, &lo) < 0 || cmp(&y, &lo) < 0)
-	{
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("arguments must be non-negative")));
-	}
+
 	if (cmp(&x, &y) >= 0)
-	{
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("first argument must be strictly smaller than second")));
-	}
+
 	while (true)
 	{
 		mediant(&lo, &hi, med);
 		if (cmp(med, &x) < 1)
-		{
 			memcpy(&lo, med, sizeof(Rational));
-		}
 		else if (cmp(med, &y) > -1)
-		{
 			memcpy(&hi, med, sizeof(Rational));
-		}
 		else
-		{
 			break;
-		}
 	}
 
 	PG_RETURN_POINTER(med);
 }
+
 
 /*
  ************* COMPARISON **************
