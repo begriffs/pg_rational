@@ -244,6 +244,8 @@ select sum(r)
 
 -- stern-brocot intermediates
 
+-- intermediates start at 1 -- between 0 and Infinity
+select rational_intermediate(NULL, NULL);
 -- random example
 select rational_intermediate('15/16', 1);
 select rational_intermediate('15/16', 1)

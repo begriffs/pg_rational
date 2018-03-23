@@ -331,9 +331,6 @@ rational_intermediate(PG_FUNCTION_ARGS)
 				hi = {1, 0},	/* yes, an internal use of 1/0 */
 			   *med = palloc(sizeof(Rational));
 
-	if (PG_ARGISNULL(0) && PG_ARGISNULL(1))
-		PG_RETURN_NULL();
-
 	/*
 	 * x = coalesce(lo, arg[0]) y = coalesce(hi, arg[1])
 	 */
