@@ -16,6 +16,11 @@ precision in the denominator.
 * Coercion from integer/bigint/tuple
 * Custom aggregate
 
+### Motivation
+
+See my blog post about [User-Defined Order in
+SQL](https://begriffs.com/posts/2018-03-20-user-defined-order.html).
+
 ### Usage
 
 Basics
