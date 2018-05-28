@@ -43,31 +43,41 @@ rational_in(PG_FUNCTION_ARGS)
 				d;
 	Rational   *result = palloc(sizeof(Rational));
 
-	if (*s == '/')
+	if (!isdigit(*s) && *s != '-')
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-				 errmsg("Expecting value before '/'")));
+				 errmsg("Missing or invalid numerator")));
 
 	n = strtoll(s, &after, 10);
-	if (*after != '/')
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-				 errmsg("Expecting '/' after number but found '%c'", *after)));
-	if (*(++after) == '\0')
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-				 errmsg("Expecting value after '/' but got '\\0'")));
 
-	d = strtoll(after, &after, 10);
-	if (*after != '\0')
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-				 errmsg("Expecting '\\0' but found '%c'", *after)));
+	if (*after == '\0')
+	{
+		/* if just a number and no slash, interpret as an int */
+		d = 1;
+	}
+	else
+	{
+		/* otherwise look for denominator */
+		if (*after != '/')
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+					 errmsg("Expecting '/' after number but found '%c'", *after)));
+		if (*(++after) == '\0')
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+					 errmsg("Expecting value after '/' but got '\\0'")));
 
-	if (d == 0)
-		ereport(ERROR,
-				(errcode(ERRCODE_DIVISION_BY_ZERO),
-				 errmsg("fraction cannot have zero denominator")));
+		d = strtoll(after, &after, 10);
+		if (*after != '\0')
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+					 errmsg("Expecting '\\0' but found '%c'", *after)));
+
+		if (d == 0)
+			ereport(ERROR,
+					(errcode(ERRCODE_DIVISION_BY_ZERO),
+					 errmsg("fraction cannot have zero denominator")));
+	}
 
 	if (n < INT32_MIN || n > INT32_MAX || d < INT32_MIN || d > INT32_MAX)
 		ereport(ERROR,

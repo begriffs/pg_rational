@@ -102,18 +102,26 @@ select '1/0'::rational;
 ERROR:  fraction cannot have zero denominator
 LINE 1: select '1/0'::rational;
                ^
--- no single numbers
+-- quoted number treated as int
 select '1'::rational;
-ERROR:  Expecting '/' after number but found '
-LINE 1: select '1'::rational;
-               ^
+ rational 
+----------
+ 1/1
+(1 row)
+
+select '-1'::rational;
+ rational 
+----------
+ -1/1
+(1 row)
+
 -- no garbage
 select ''::rational;
-ERROR:  Expecting '/' after number but found '
+ERROR:  Missing or invalid numerator
 LINE 1: select ''::rational;
                ^
 select '/'::rational;
-ERROR:  Expecting value before '/'
+ERROR:  Missing or invalid numerator
 LINE 1: select '/'::rational;
                ^
 select '2/'::rational;
@@ -121,11 +129,11 @@ ERROR:  Expecting value after '/' but got '\0'
 LINE 1: select '2/'::rational;
                ^
 select '/2'::rational;
-ERROR:  Expecting value before '/'
+ERROR:  Missing or invalid numerator
 LINE 1: select '/2'::rational;
                ^
 select 'sdfkjsdfj34984538'::rational;
-ERROR:  Expecting '/' after number but found 's'
+ERROR:  Missing or invalid numerator
 LINE 1: select 'sdfkjsdfj34984538'::rational;
                ^
 -- simplification

@@ -35,8 +35,9 @@ select '2147483648/2147483647'::rational;
 select '1 /3'::rational;
 -- no zero denominator
 select '1/0'::rational;
--- no single numbers
+-- quoted number treated as int
 select '1'::rational;
+select '-1'::rational;
 -- no garbage
 select ''::rational;
 select '/'::rational;
