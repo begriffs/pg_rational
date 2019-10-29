@@ -75,12 +75,14 @@ select '1/2'::rational::float;
     0.5
 (1 row)
 
+set extra_float_digits = 0; -- default changed in PG12
 select '1/3'::rational::float;
       float8       
 -------------------
  0.333333333333333
 (1 row)
 
+reset extra_float_digits;
 select '-1/2'::rational::float;
  float8 
 --------
