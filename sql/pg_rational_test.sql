@@ -26,7 +26,9 @@ select -0.5::float::rational;
 
 -- to float
 select '1/2'::rational::float;
+set extra_float_digits = 0; -- default changed in PG12
 select '1/3'::rational::float;
+reset extra_float_digits;
 select '-1/2'::rational::float;
 
 -- too big
