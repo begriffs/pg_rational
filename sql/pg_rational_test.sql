@@ -23,6 +23,13 @@ select 0.263157894737::float::rational;
 select 3.141592625359::float::rational;
 select 0.606557377049::float::rational;
 select -0.5::float::rational;
+select 1.000001::float::rational;
+select 1.0000001::float::rational;
+select 1.00000001::float::rational;
+select 1.000000001::float::rational;
+select 1.0000000001::float::rational;
+select 2147483647::float::rational;
+select 2147483647.1::float::rational;
 
 -- to float
 select '1/2'::rational::float;
