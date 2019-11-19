@@ -4,6 +4,7 @@
 #include "libpq/pqformat.h"		/* needed for send/recv functions */
 #include <limits.h>
 #include <math.h>
+#include <float.h>
 
 PG_MODULE_MAGIC;
 
@@ -13,6 +14,7 @@ typedef struct
 	int32		denom;
 }			Rational;
 
+static void limit_denominator(Rational *, int64, int64, int32);
 static int32 gcd(int32, int32);
 static bool simplify(Rational *);
 static int32 cmp(Rational *, Rational *);
@@ -102,46 +104,36 @@ rational_in(PG_FUNCTION_ARGS)
 	PG_RETURN_POINTER(result);
 }
 
-/*
-  This function taken from John Kennedy's paper, "Algorithm To Convert a
-  Decimal to a Fraction." Translated from Pascal.
-*/
+
 Datum
 rational_in_float(PG_FUNCTION_ARGS)
 {
 	float8		target = PG_GETARG_FLOAT8(0),
-				z,
-				prev_denom,
-				error;
-	int32		temp,
-				sign;
+				float_part;
+	int			exponent,
+				off;
+	int64		d, n;
 	Rational   *result = palloc(sizeof(Rational));
+	const int32	max_denominator = INT32_MAX;
+	const int32	max_numerator = INT32_MAX;
 
-	if (target == floor(target))
-	{
-		result->numer = floor(target);
-		result->denom = 1;
-		PG_RETURN_POINTER(result);
-	}
+	if (!(fabs(target) <= max_numerator)) // also excludes NaN's
+		ereport(ERROR,
+				(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+				 errmsg("value too large for rational")));
 
-	sign = target < 0.0 ? -1 : 1;
-	target = fabs(target);
+	// convert target into a fraction n/d (with d being a power of
+	// 2). It is exact as long as target isn't too small, then it
+	// looses precion because it's rounded below 2^-63.
 
-	z = target;
-	prev_denom = 0;
-	result->denom = 1;
-	do
-	{
-		z = 1.0 / (z - floor(z));
-		temp = result->denom;
-		result->denom = result->denom * floor(z) + prev_denom;
-		prev_denom = temp;
-		result->numer = round(target * result->denom);
-
-		error = fabs(target - ((float8) result->numer / (float8) result->denom));
-	} while (z != floor(z) && error >= 1e-12);
-
-	result->numer *= sign;
+	float_part = frexp(target, &exponent);
+	exponent = DBL_MANT_DIG - exponent;
+	off = 0;
+	if (exponent >= 63)
+		off = exponent - 62;
+	n = round(ldexp(float_part, DBL_MANT_DIG-off));
+	d = (int64)1 << (exponent-off);
+	limit_denominator(result, n, d, max_denominator);
 	PG_RETURN_POINTER(result);
 }
 
@@ -226,12 +218,26 @@ rational_send(PG_FUNCTION_ARGS)
  ************* ARITHMETIC **************
  */
 
+PG_FUNCTION_INFO_V1(rational_limit_denominator);
 PG_FUNCTION_INFO_V1(rational_simplify);
 PG_FUNCTION_INFO_V1(rational_add);
 PG_FUNCTION_INFO_V1(rational_sub);
 PG_FUNCTION_INFO_V1(rational_mul);
 PG_FUNCTION_INFO_V1(rational_div);
 PG_FUNCTION_INFO_V1(rational_neg);
+
+Datum
+rational_limit_denominator(PG_FUNCTION_ARGS)
+{
+	Rational   *in = (Rational *) PG_GETARG_POINTER(0);
+	int32		limit = PG_GETARG_INT32(1);
+	Rational   *out = palloc(sizeof(Rational));
+
+	limit_denominator(out, in->numer, in->denom, limit);
+
+	PG_RETURN_POINTER(out);
+}
+
 
 Datum
 rational_simplify(PG_FUNCTION_ARGS)
@@ -463,6 +469,81 @@ rational_larger(PG_FUNCTION_ARGS)
 /*
  ************** INTERNAL ***************
  */
+
+/*
+limit_denomintor() uses continued fractions to convert the
+rational n/d into the rational n'/d' with d' < max_denominator
+and n' <= INT32_MAX and smallest |d/n-d'/n'|.
+*/
+void
+limit_denominator(Rational * r, int64 n, int64 d, int32 max_denominator)
+{
+	float8		target,
+				error1,
+				error2,
+				df;
+	int			neg, k, kn;
+	int64		a, d1;
+	int64		p0, q0, p1, q1, p2, q2;
+	const int32	max_numerator = INT32_MAX;
+
+	target = (float8)n / (float8)d;
+	neg = false;
+	if (n < 0)
+	{
+		neg = true;
+		n = -n;
+	}
+	p0 = 0;
+	q0 = 1;
+	p1 = 1;
+	q1 = 0;
+	while (true)
+	{
+		a = n / d;
+		q2 = q0 + a * q1;
+		if (q2 > max_denominator)
+			break;
+		p2 = p0 + a * p1;
+		if (p2 > max_numerator)
+			break;
+		d1 = n - a * d;
+		n = d;
+		d = d1;
+		p0 = p1;
+		q0 = q1;
+		p1 = p2;
+		q1 = q2;
+		if (d == 0 || target == (float8)p1 / (float8)q1)
+			break;
+	}
+	// calculate secondary convergent (reuse variables p2, q2)
+	// take largest possible k.
+	k = (max_denominator - q0) / q1;
+	if (p1 != 0) {
+		kn = (max_numerator - p0) / p1;
+		if (kn < k)
+			k = kn;
+	}
+	p2 = p0 + k * p1;
+	q2 = q0 + k * q1;
+	// select best of both solutions
+	error1 = fabs((float8)p1 / (float8)q1 - target);
+	error2 = fabs((float8)p2 / (float8)q2 - target);
+	df = error2 - error1;
+	if (df < 0 || (df == 0.0 && q2 < q1))
+	{
+		r->numer = p2;
+		r->denom = q2;
+	}
+	else
+	{
+		r->numer = p1;
+		r->denom = q1;
+	}
+	if (neg)
+		r->numer = -r->numer;
+}
 
 int32
 gcd(int32 a, int32 b)

@@ -51,9 +51,9 @@ select 0.263157894737::float::rational;
 (1 row)
 
 select 3.141592625359::float::rational;
-    rational     
------------------
- 4712235/1499951
+      rational      
+--------------------
+ 109795040/34948847
 (1 row)
 
 select 0.606557377049::float::rational;
@@ -68,6 +68,46 @@ select -0.5::float::rational;
  -1/2
 (1 row)
 
+select 1.000001::float::rational;
+    rational     
+-----------------
+ 1000001/1000000
+(1 row)
+
+select 1.0000001::float::rational;
+     rational      
+-------------------
+ 10000001/10000000
+(1 row)
+
+select 1.00000001::float::rational;
+      rational       
+---------------------
+ 100000001/100000000
+(1 row)
+
+select 1.000000001::float::rational;
+      rational       
+---------------------
+ 999999918/999999917
+(1 row)
+
+select 1.0000000001::float::rational;
+ rational 
+----------
+ 1/1
+(1 row)
+
+select 2147483647::float::rational;
+   rational   
+--------------
+ 2147483647/1
+(1 row)
+
+select 2147483647.1::float::rational;
+ERROR:  value too large for rational
+select 'NAN'::float::rational;
+ERROR:  value too large for rational
 -- to float
 select '1/2'::rational::float;
  float8 
