@@ -106,6 +106,8 @@ select 2147483647::float::rational;
 
 select 2147483647.1::float::rational;
 ERROR:  value too large for rational
+select 'NAN'::float::rational;
+ERROR:  value too large for rational
 -- to float
 select '1/2'::rational::float;
  float8 
