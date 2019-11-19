@@ -131,6 +131,11 @@ RETURNS rational
 AS '$libdir/pg_rational'
 LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
+CREATE FUNCTION rational_limit_denominator(rational, integer)
+RETURNS rational
+AS '$libdir/pg_rational'
+LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
 CREATE FUNCTION rational_intermediate(rational, rational)
 RETURNS rational
 AS '$libdir/pg_rational'
