@@ -1,7 +1,8 @@
 #include "postgres.h"
 #include "fmgr.h"
 #include "access/hash.h"
-#include "libpq/pqformat.h"		/* needed for send/recv functions */
+#include "common/int.h"         /* portable overflow detection */
+#include "libpq/pqformat.h"		/* send/recv functions */
 #include <limits.h>
 #include <math.h>
 
@@ -565,10 +566,10 @@ add(Rational * x, Rational * y)
 	Rational   *result;
 
 retry_add:
-	nxyd_bad = __builtin_smul_overflow(x->numer, y->denom, &xnyd);
-	ynxd_bad = __builtin_smul_overflow(y->numer, x->denom, &ynxd);
-	numer_bad = __builtin_sadd_overflow(xnyd, ynxd, &numer);
-	denom_bad = __builtin_smul_overflow(x->denom, y->denom, &denom);
+	nxyd_bad = pg_mul_s32_overflow(x->numer, y->denom, &xnyd);
+	ynxd_bad = pg_mul_s32_overflow(y->numer, x->denom, &ynxd);
+	numer_bad = pg_add_s32_overflow(xnyd, ynxd, &numer);
+	denom_bad = pg_mul_s32_overflow(x->denom, y->denom, &denom);
 
 	if (nxyd_bad || ynxd_bad || numer_bad || denom_bad)
 	{
@@ -600,8 +601,8 @@ mul(Rational * x, Rational * y)
 	Rational   *result;
 
 retry_mul:
-	numer_bad = __builtin_smul_overflow(x->numer, y->numer, &numer);
-	denom_bad = __builtin_smul_overflow(x->denom, y->denom, &denom);
+	numer_bad = pg_mul_s32_overflow(x->numer, y->numer, &numer);
+	denom_bad = pg_mul_s32_overflow(x->denom, y->denom, &denom);
 
 	if (numer_bad || denom_bad)
 	{
