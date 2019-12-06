@@ -111,15 +111,16 @@ rational_in_float(PG_FUNCTION_ARGS)
 {
 	float8		target = PG_GETARG_FLOAT8(0),
 				z,
-				prev_denom,
+				fnumer,
+				fdenom,
 				error;
-	int32		temp,
+	int32		prev_denom,
 				sign;
 	Rational   *result = palloc(sizeof(Rational));
 
-	if (target == floor(target))
+	if (target == (int32)target)
 	{
-		result->numer = floor(target);
+		result->numer = (int32)target;
 		result->denom = 1;
 		PG_RETURN_POINTER(result);
 	}
@@ -127,16 +128,25 @@ rational_in_float(PG_FUNCTION_ARGS)
 	sign = target < 0.0 ? -1 : 1;
 	target = fabs(target);
 
+	if (!(target <= INT32_MAX)) { // also excludes NaN's
+		ereport(ERROR,
+				(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+				 errmsg("value too large for rational")));
+	}
 	z = target;
 	prev_denom = 0;
+	result->numer = (int32)round(target);
 	result->denom = 1;
 	do
 	{
 		z = 1.0 / (z - floor(z));
-		temp = result->denom;
-		result->denom = result->denom * floor(z) + prev_denom;
-		prev_denom = temp;
-		result->numer = round(target * result->denom);
+		fdenom = result->denom * floor(z) + prev_denom;
+		fnumer = round(target * fdenom);
+		if (fnumer > INT32_MAX || fdenom > INT32_MAX )
+			break;
+		prev_denom = result->denom;
+		result->numer = (int32)fnumer;
+		result->denom = (int32)fdenom;
 
 		error = fabs(target - ((float8) result->numer / (float8) result->denom));
 	} while (z != floor(z) && error >= 1e-12);
