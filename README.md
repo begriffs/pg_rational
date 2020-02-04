@@ -15,6 +15,7 @@ precision in the denominator.
 * Implements Stern-Brocot trees for finding intermediate points
 * Coercion from integer/bigint/tuple
 * Custom aggregate
+* Supports PostgreSQL 11 and newer
 
 ### Motivation
 
