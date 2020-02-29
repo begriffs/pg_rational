@@ -1,8 +1,12 @@
 #include "postgres.h"
 #include "fmgr.h"
 #include "access/hash.h"
-#include "common/int.h"         /* portable overflow detection */
 #include "libpq/pqformat.h"		/* send/recv functions */
+
+#if PG_VERSION_NUM >= 100000
+#include "common/int.h"         /* portable overflow detection */
+#endif
+
 #include <limits.h>
 #include <math.h>
 
