@@ -3,7 +3,7 @@
 #include "access/hash.h"
 #include "libpq/pqformat.h"		/* send/recv functions */
 
-#if PG_VERSION_NUM >= 100000
+#if PG_VERSION_NUM >= 110000
 #include "common/int.h"         /* portable overflow detection */
 #endif
 
@@ -479,7 +479,7 @@ rational_larger(PG_FUNCTION_ARGS)
  ************** INTERNAL ***************
  */
 
-#if PG_VERSION_NUM < 100000
+#if PG_VERSION_NUM < 110000
 /* Shims for the lack of src/include/common/int.h in old Postgres.
  * Less efficient because we don't leverage compiler builtins for
  * detecting overflow like the Postgres source does.
@@ -511,7 +511,7 @@ pg_add_s32_overflow(int32 a, int32 b, int32 *result)
 	*result = (int32) res;
 	return false;
 }
-#endif /* PG_VERSION_NUM < 100000 */
+#endif /* PG_VERSION_NUM */
 
 int32
 gcd(int32 a, int32 b)
