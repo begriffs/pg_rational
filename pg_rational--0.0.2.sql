@@ -267,63 +267,88 @@ RETURNS rational
 AS '$libdir/pg_rational'
 LANGUAGE C IMMUTABLE STRICT;
 
-CREATE AGGREGATE min(rational)  (
-    SFUNC = rational_smaller,
-    STYPE = rational,
-    SORTOP = <,
-    COMBINEFUNC = rational_smaller,
-	PARALLEL = SAFE
-);
-
-CREATE AGGREGATE max(rational)  (
-    SFUNC = rational_larger,
-    STYPE = rational,
-    SORTOP = >,
-    COMBINEFUNC = rational_larger,
-	PARALLEL = SAFE
-);
-
-CREATE AGGREGATE sum (rational)
-(
-    SFUNC = rational_add,
-    STYPE = rational,
-    COMBINEFUNC = rational_add,
-	PARALLEL = SAFE
-);
-
 ------- Parallel-safe optimization --------
 
 DO LANGUAGE plpgsql $$
 BEGIN
 	IF current_setting('server_version_num')::int >= 90600
 	THEN
-		EXECUTE 'ALTER FUNCTION rational_in(cstring) PARALLEL SAFE';
-		EXECUTE 'ALTER FUNCTION rational_in_float(float8) PARALLEL SAFE';
-		EXECUTE 'ALTER FUNCTION rational_out(rational) PARALLEL SAFE';
-		EXECUTE 'ALTER FUNCTION rational_out_float(rational) PARALLEL SAFE';
-		EXECUTE 'ALTER FUNCTION rational_recv(internal) PARALLEL SAFE';
-		EXECUTE 'ALTER FUNCTION rational_send(rational) PARALLEL SAFE';
-		EXECUTE 'ALTER FUNCTION rational_create(integer, integer) PARALLEL SAFE';
-		EXECUTE 'ALTER FUNCTION rational_embed(integer) PARALLEL SAFE';
-		EXECUTE 'ALTER FUNCTION rational_add(rational, rational) PARALLEL SAFE';
-		EXECUTE 'ALTER FUNCTION rational_sub(rational, rational) PARALLEL SAFE';
-		EXECUTE 'ALTER FUNCTION rational_mul(rational, rational) PARALLEL SAFE';
-		EXECUTE 'ALTER FUNCTION rational_div(rational, rational) PARALLEL SAFE';
-		EXECUTE 'ALTER FUNCTION rational_neg(rational) PARALLEL SAFE';
-		EXECUTE 'ALTER FUNCTION rational_simplify(rational) PARALLEL SAFE';
-		EXECUTE 'ALTER FUNCTION rational_eq(rational, rational) PARALLEL SAFE';
-		EXECUTE 'ALTER FUNCTION rational_ne(rational, rational) PARALLEL SAFE';
-		EXECUTE 'ALTER FUNCTION rational_lt(rational, rational) PARALLEL SAFE';
-		EXECUTE 'ALTER FUNCTION rational_le(rational, rational) PARALLEL SAFE';
-		EXECUTE 'ALTER FUNCTION rational_gt(rational, rational) PARALLEL SAFE';
-		EXECUTE 'ALTER FUNCTION rational_ge(rational, rational) PARALLEL SAFE';
-		EXECUTE 'ALTER FUNCTION rational_cmp(rational, rational) PARALLEL SAFE';
-		EXECUTE 'ALTER FUNCTION rational_smaller(rational, rational) PARALLEL SAFE';
-		EXECUTE 'ALTER FUNCTION rational_larger(rational, rational) PARALLEL SAFE';
+		-- newish pg
 
-		-- EXECUTE 'ALTER AGGREGATE min(rational) PARALLEL SAFE';
-		-- EXECUTE 'ALTER AGGREGATE max(rational) PARALLEL SAFE';
-		-- EXECUTE 'ALTER AGGREGATE sum(rational) PARALLEL SAFE';
+		EXECUTE $alter$
+			ALTER FUNCTION rational_in(cstring) PARALLEL SAFE;
+			ALTER FUNCTION rational_in_float(float8) PARALLEL SAFE;
+			ALTER FUNCTION rational_out(rational) PARALLEL SAFE;
+			ALTER FUNCTION rational_out_float(rational) PARALLEL SAFE;
+			ALTER FUNCTION rational_recv(internal) PARALLEL SAFE;
+			ALTER FUNCTION rational_send(rational) PARALLEL SAFE;
+			ALTER FUNCTION rational_create(integer, integer) PARALLEL SAFE;
+			ALTER FUNCTION rational_embed(integer) PARALLEL SAFE;
+			ALTER FUNCTION rational_add(rational, rational) PARALLEL SAFE;
+			ALTER FUNCTION rational_sub(rational, rational) PARALLEL SAFE;
+			ALTER FUNCTION rational_mul(rational, rational) PARALLEL SAFE;
+			ALTER FUNCTION rational_div(rational, rational) PARALLEL SAFE;
+			ALTER FUNCTION rational_neg(rational) PARALLEL SAFE;
+			ALTER FUNCTION rational_simplify(rational) PARALLEL SAFE;
+			ALTER FUNCTION rational_eq(rational, rational) PARALLEL SAFE;
+			ALTER FUNCTION rational_ne(rational, rational) PARALLEL SAFE;
+			ALTER FUNCTION rational_lt(rational, rational) PARALLEL SAFE;
+			ALTER FUNCTION rational_le(rational, rational) PARALLEL SAFE;
+			ALTER FUNCTION rational_gt(rational, rational) PARALLEL SAFE;
+			ALTER FUNCTION rational_ge(rational, rational) PARALLEL SAFE;
+			ALTER FUNCTION rational_cmp(rational, rational) PARALLEL SAFE;
+			ALTER FUNCTION rational_smaller(rational, rational) PARALLEL SAFE;
+			ALTER FUNCTION rational_larger(rational, rational) PARALLEL SAFE;
+		$alter$;
+
+		EXECUTE $agg$
+			CREATE AGGREGATE min(rational)  (
+				SFUNC = rational_smaller,
+				STYPE = rational,
+				SORTOP = <,
+				COMBINEFUNC = rational_smaller,
+				PARALLEL = SAFE
+			);
+
+			CREATE AGGREGATE max(rational)  (
+				SFUNC = rational_larger,
+				STYPE = rational,
+				SORTOP = >,
+				COMBINEFUNC = rational_larger,
+				PARALLEL = SAFE
+			);
+
+			CREATE AGGREGATE sum (rational)
+			(
+				SFUNC = rational_add,
+				STYPE = rational,
+				COMBINEFUNC = rational_add,
+				PARALLEL = SAFE
+			);
+		$agg$;
+
+	ELSE
+		-- old pg
+
+		EXECUTE $agg$
+			CREATE AGGREGATE min(rational)  (
+				SFUNC = rational_smaller,
+				STYPE = rational,
+				SORTOP = <
+			);
+
+			CREATE AGGREGATE max(rational)  (
+				SFUNC = rational_larger,
+				STYPE = rational,
+				SORTOP = >
+			);
+
+			CREATE AGGREGATE sum (rational)
+			(
+				SFUNC = rational_add,
+				STYPE = rational
+			);
+		$agg$;
 	END IF;
 END
 $$;
