@@ -3,32 +3,32 @@
 CREATE FUNCTION rational_in(cstring)
 RETURNS rational
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE FUNCTION rational_in_float(float8)
 RETURNS rational
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE FUNCTION rational_out(rational)
 RETURNS cstring
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE FUNCTION rational_out_float(rational)
 RETURNS float8
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE FUNCTION rational_recv(internal)
 RETURNS rational
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE FUNCTION rational_send(rational)
 RETURNS bytea
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE TYPE rational (
   INPUT   = rational_in,
@@ -41,7 +41,7 @@ CREATE TYPE rational (
 CREATE FUNCTION rational_create(integer, integer)
 RETURNS rational
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE TYPE ratt AS (n integer, d integer);
 CREATE FUNCTION tuple_to_rational(ratt)
@@ -64,7 +64,7 @@ CREATE CAST (rational as float8)
 CREATE FUNCTION rational_embed(integer)
 RETURNS rational
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE CAST (integer AS rational)
   WITH FUNCTION rational_embed(integer)
@@ -73,7 +73,7 @@ CREATE CAST (integer AS rational)
 CREATE FUNCTION rational_add(rational, rational)
 RETURNS rational
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR + (
   leftarg = rational,
@@ -85,7 +85,7 @@ CREATE OPERATOR + (
 CREATE FUNCTION rational_sub(rational, rational)
 RETURNS rational
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR - (
   leftarg = rational,
@@ -96,7 +96,7 @@ CREATE OPERATOR - (
 CREATE FUNCTION rational_mul(rational, rational)
 RETURNS rational
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR * (
   leftarg = rational,
@@ -108,7 +108,7 @@ CREATE OPERATOR * (
 CREATE FUNCTION rational_div(rational, rational)
 RETURNS rational
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR / (
   leftarg = rational,
@@ -119,7 +119,7 @@ CREATE OPERATOR / (
 CREATE FUNCTION rational_neg(rational)
 RETURNS rational
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR - (
   rightarg = rational,
@@ -129,7 +129,7 @@ CREATE OPERATOR - (
 CREATE FUNCTION rational_simplify(rational)
 RETURNS rational
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE FUNCTION rational_intermediate(rational, rational)
 RETURNS rational
@@ -141,7 +141,7 @@ LANGUAGE C IMMUTABLE;
 CREATE FUNCTION rational_eq(rational, rational)
 RETURNS boolean
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR = (
   LEFTARG = rational,
@@ -157,7 +157,7 @@ CREATE OPERATOR = (
 CREATE FUNCTION rational_ne(rational, rational)
 RETURNS boolean
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR <> (
   LEFTARG = rational,
@@ -172,7 +172,7 @@ CREATE OPERATOR <> (
 CREATE FUNCTION rational_lt(rational, rational)
 RETURNS boolean
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR < (
   LEFTARG = rational,
@@ -187,7 +187,7 @@ CREATE OPERATOR < (
 CREATE FUNCTION rational_le(rational, rational)
 RETURNS boolean
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR <= (
   LEFTARG = rational,
@@ -202,7 +202,7 @@ CREATE OPERATOR <= (
 CREATE FUNCTION rational_gt(rational, rational)
 RETURNS boolean
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR > (
   LEFTARG = rational,
@@ -217,7 +217,7 @@ CREATE OPERATOR > (
 CREATE FUNCTION rational_ge(rational, rational)
 RETURNS boolean
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR >= (
   LEFTARG = rational,
@@ -232,7 +232,7 @@ CREATE OPERATOR >= (
 CREATE FUNCTION rational_cmp(rational, rational)
 RETURNS integer
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE OPERATOR CLASS btree_rational_ops
 DEFAULT FOR TYPE rational USING btree
@@ -260,12 +260,12 @@ CREATE OPERATOR CLASS hash_rational_ops
 CREATE FUNCTION rational_smaller(rational, rational)
 RETURNS rational
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE FUNCTION rational_larger(rational, rational)
 RETURNS rational
 AS '$libdir/pg_rational'
-LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+LANGUAGE C IMMUTABLE STRICT;
 
 CREATE AGGREGATE min(rational)  (
     SFUNC = rational_smaller,
@@ -290,3 +290,40 @@ CREATE AGGREGATE sum (rational)
     COMBINEFUNC = rational_add,
 	PARALLEL = SAFE
 );
+
+------- Parallel-safe optimization --------
+
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_setting('server_version_num')::int >= 90600
+	THEN
+		EXECUTE 'ALTER FUNCTION rational_in(cstring) PARALLEL SAFE';
+		EXECUTE 'ALTER FUNCTION rational_in_float(float8) PARALLEL SAFE';
+		EXECUTE 'ALTER FUNCTION rational_out(rational) PARALLEL SAFE';
+		EXECUTE 'ALTER FUNCTION rational_out_float(rational) PARALLEL SAFE';
+		EXECUTE 'ALTER FUNCTION rational_recv(internal) PARALLEL SAFE';
+		EXECUTE 'ALTER FUNCTION rational_send(rational) PARALLEL SAFE';
+		EXECUTE 'ALTER FUNCTION rational_create(integer, integer) PARALLEL SAFE';
+		EXECUTE 'ALTER FUNCTION rational_embed(integer) PARALLEL SAFE';
+		EXECUTE 'ALTER FUNCTION rational_add(rational, rational) PARALLEL SAFE';
+		EXECUTE 'ALTER FUNCTION rational_sub(rational, rational) PARALLEL SAFE';
+		EXECUTE 'ALTER FUNCTION rational_mul(rational, rational) PARALLEL SAFE';
+		EXECUTE 'ALTER FUNCTION rational_div(rational, rational) PARALLEL SAFE';
+		EXECUTE 'ALTER FUNCTION rational_neg(rational) PARALLEL SAFE';
+		EXECUTE 'ALTER FUNCTION rational_simplify(rational) PARALLEL SAFE';
+		EXECUTE 'ALTER FUNCTION rational_eq(rational, rational) PARALLEL SAFE';
+		EXECUTE 'ALTER FUNCTION rational_ne(rational, rational) PARALLEL SAFE';
+		EXECUTE 'ALTER FUNCTION rational_lt(rational, rational) PARALLEL SAFE';
+		EXECUTE 'ALTER FUNCTION rational_le(rational, rational) PARALLEL SAFE';
+		EXECUTE 'ALTER FUNCTION rational_gt(rational, rational) PARALLEL SAFE';
+		EXECUTE 'ALTER FUNCTION rational_ge(rational, rational) PARALLEL SAFE';
+		EXECUTE 'ALTER FUNCTION rational_cmp(rational, rational) PARALLEL SAFE';
+		EXECUTE 'ALTER FUNCTION rational_smaller(rational, rational) PARALLEL SAFE';
+		EXECUTE 'ALTER FUNCTION rational_larger(rational, rational) PARALLEL SAFE';
+
+		-- EXECUTE 'ALTER AGGREGATE min(rational) PARALLEL SAFE';
+		-- EXECUTE 'ALTER AGGREGATE max(rational) PARALLEL SAFE';
+		-- EXECUTE 'ALTER AGGREGATE sum(rational) PARALLEL SAFE';
+	END IF;
+END
+$$;
