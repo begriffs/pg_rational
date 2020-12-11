@@ -13,6 +13,10 @@ env:
 language: C
 dist: xenial
 
+arch:
+  - AMD64
+  - ppc64le
+
 before_install:
   - sudo apt-get update -qq
 
