@@ -57,8 +57,7 @@ select '-1/2'::rational::float;
 Reorder items without renumbering surrounding items.
 
 ```sql
-create 
-todos_seq;
+create todos_seq;
 
 create table todos (
   prio rational unique
