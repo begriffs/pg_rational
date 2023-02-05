@@ -1,7 +1,5 @@
 ## Precise fractions for PostgreSQL
 
-<img src="https://travis-ci.org/begriffs/pg_rational.svg?branch=master" alt="build:">
-
 An efficient custom type. Perfect for exact arithmetic or user-specified
 table row ordering. Holds values as big as an integer, with matching
 precision in the denominator.
