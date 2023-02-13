@@ -54,14 +54,18 @@ select '-1/2'::rational::float;
 -- => -0.5
 ```
 
-Reorder items without renumbering surrounding items.
+Next, reordering items without renumbering surrounding items.
+
+Note we use an integer sequence rather than the default of bigint, and
+explicitly cast `nextval()`. There is no conversion from bigint to rational
+because numerators in this extension can hold at most integer range anyway.
 
 ```sql
-create sequence todos_seq;
+create sequence todos_seq as integer;
 
 create table todos (
   prio rational unique
-    default nextval('todos_seq'),
+    default nextval('todos_seq')::integer,
   what text not null
 );
 
