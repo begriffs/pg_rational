@@ -139,6 +139,22 @@ Then, in your database:
 create extension pg_rational;
 ```
 
+### Docker Image
+```bash
+docker pull mnafisiasl/be-rational-postgres:15.2
+```
+
+be-rational-postgres is Postgres official image with pg_rational installed.
+
+[GitHub Repo](https://github.com/MRNafisiA/be-rational-postgres)  
+[Docker Repo](https://github.com/MRNafisiA/be-rational-postgres) 
+
+pg_rational is only installed, so do not forget to enable it:
+
+```sql
+create extension pg_rational;
+```
+
 ### Caveats
 
 The `rational_intermediate` function is super fast on typical intervals, but the narrower the range between arguments the longer it takes. We may want to add a max search depth parameter to prevent malicious values from hogging the server.
