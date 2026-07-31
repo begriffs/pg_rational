@@ -269,3 +269,8 @@ select rational_intermediate('1/3', NULL);
 select rational_intermediate('3/2', NULL);
 -- though not the other direction
 select rational_intermediate(NULL, '15/16');
+
+-- test timeout
+set statement_timeout = '3s';
+select rational_intermediate('2147483646/2147483647'::rational, '1/1'::rational);
+set statement_timeout to default;

@@ -2,6 +2,7 @@
 #include "fmgr.h"
 #include "access/hash.h"
 #include "libpq/pqformat.h"		/* send/recv functions */
+#include "miscadmin.h"
 
 #if PG_VERSION_NUM >= 110000
 #include "common/int.h"			/* portable overflow detection */
@@ -379,6 +380,9 @@ rational_intermediate(PG_FUNCTION_ARGS)
 
 	while (true)
 	{
+		/* Allow query cancel (e.g. Ctrl+C) and statement_timeout . */
+		CHECK_FOR_INTERRUPTS();
+
 		mediant(&lo, &hi, med);
 		if (cmp(med, &x) < 1)
 			memcpy(&lo, med, sizeof(Rational));
