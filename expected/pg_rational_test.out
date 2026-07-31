@@ -688,3 +688,8 @@ select rational_intermediate(NULL, '15/16');
  1/2
 (1 row)
 
+-- test timeout
+set statement_timeout = '3s';
+select rational_intermediate('2147483646/2147483647'::rational, '1/1'::rational);
+ERROR:  canceling statement due to statement timeout
+set statement_timeout to default;
