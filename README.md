@@ -13,7 +13,7 @@ precision in the denominator.
 * Defers GCD calculation until requested or absolutely required
 * Supports btree and hash indices
 * Implements Stern-Brocot trees for finding intermediate points
-* Coercion from integer/bigint/tuple
+* Coercion from integer/float/tuple
 * Custom aggregate
 
 ### Motivation
@@ -120,7 +120,7 @@ select * from todos order by prio asc;
 */
 ```
 
-This extension uses Stern-Brocot trees to find efficient intermediate points as fractions in lowest terms. It can continue to split deeper between fractions as much as any practical application requires.
+This extension uses Stern-Brocot trees to find efficient intermediate points as fractions in lowest terms. The two-argument form limits the search to one million steps; use the three-argument form to choose a different positive limit when needed.
 
 Using floats, on the other hand, and picking the midpoints between adjacent values runs out of space rapidly (you only need 50-odd inserts at the wrong spot to start hitting problems).
 
@@ -141,7 +141,7 @@ create extension pg_rational;
 
 ### Caveats
 
-The `rational_intermediate` function is super fast on typical intervals, but the narrower the range between arguments the longer it takes. We may want to add a max search depth parameter to prevent malicious values from hogging the server.
+The `rational_intermediate` function is super fast on typical intervals, but the narrower the range between arguments the longer it takes. The optional third argument sets the maximum search depth and prevents unusually narrow intervals from using the server indefinitely.
 
 ### Thanks
 

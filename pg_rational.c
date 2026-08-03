@@ -10,6 +10,8 @@
 #include <limits.h>
 #include <math.h>
 
+#define RATIONAL_INTERMEDIATE_DEFAULT_MAX_STEPS 1000000
+
 PG_MODULE_MAGIC;
 
 typedef struct
@@ -307,6 +309,12 @@ rational_div(PG_FUNCTION_ARGS)
 
 	memcpy(&x, PG_GETARG_POINTER(0), sizeof(Rational));
 	memcpy(&y, PG_GETARG_POINTER(1), sizeof(Rational));
+
+	if (y.numer == 0)
+		ereport(ERROR,
+				(errcode(ERRCODE_DIVISION_BY_ZERO),
+				 errmsg("division by zero")));
+
 	tmp = y.numer;
 	y.numer = y.denom;
 	y.denom = tmp;
@@ -356,6 +364,21 @@ rational_intermediate(PG_FUNCTION_ARGS)
 				lo = {0, 1},
 				hi = {1, 0},	/* yes, an internal use of 1/0 */
 			   *med = palloc(sizeof(Rational));
+	int32		max_steps = RATIONAL_INTERMEDIATE_DEFAULT_MAX_STEPS,
+				steps = 0;
+
+	if (PG_NARGS() == 3)
+	{
+		if (PG_ARGISNULL(2))
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("maximum search depth cannot be null")));
+		max_steps = PG_GETARG_INT32(2);
+	}
+	if (max_steps <= 0)
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("maximum search depth must be positive")));
 
 	/*
 	 * x = coalesce(lo, arg[0]) y = coalesce(hi, arg[1])
@@ -379,6 +402,11 @@ rational_intermediate(PG_FUNCTION_ARGS)
 
 	while (true)
 	{
+		if (steps >= max_steps)
+			ereport(ERROR,
+					(errcode(ERRCODE_PROGRAM_LIMIT_EXCEEDED),
+					 errmsg("maximum search depth exceeded")));
+		steps++;
 		mediant(&lo, &hi, med);
 		if (cmp(med, &x) < 1)
 			memcpy(&lo, med, sizeof(Rational));
@@ -562,8 +590,26 @@ cmp(Rational * a, Rational * b)
 	 * Overflow is not an option, we need a total order so that btree indices
 	 * do not die. Hence do the arithmetic in 64 bits.
 	 */
-	int64		cross1 = (int64) a->numer * (int64) b->denom,
-				cross2 = (int64) a->denom * (int64) b->numer;
+	int64		an = a->numer,
+				ad = a->denom,
+				bn = b->numer,
+				bd = b->denom,
+				cross1,
+				cross2;
+
+	if (ad < 0)
+	{
+		an = -an;
+		ad = -ad;
+	}
+	if (bd < 0)
+	{
+		bn = -bn;
+		bd = -bd;
+	}
+
+	cross1 = an * bd;
+	cross2 = ad * bn;
 
 	return (cross1 > cross2) - (cross1 < cross2);
 }
@@ -668,9 +714,12 @@ mediant(Rational * x, Rational * y, Rational * m)
 {
 	/*
 	 * Rational_intermediate sends fractions with small numers and denoms, and
-	 * slowly builds up. The search will take forever before we ever get close
-	 * to arithmetic overflow in this function, so I don't guard it here.
+	 * slowly builds up. Guard the additions anyway so unusual inputs fail
+	 * cleanly instead of invoking signed-integer overflow.
 	 */
-	m->numer = x->numer + y->numer;
-	m->denom = x->denom + y->denom;
+	if (pg_add_s32_overflow(x->numer, y->numer, &m->numer) ||
+		pg_add_s32_overflow(x->denom, y->denom, &m->denom))
+		ereport(ERROR,
+				(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+				 errmsg("intermediate value overflow in rational intermediate")));
 }
