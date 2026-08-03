@@ -31,6 +31,8 @@ select 1.0000000001::float::rational;
 select 2147483647::float::rational;
 select 2147483647.1::float::rational;
 select 'NAN'::float::rational;
+select 'Infinity'::float::rational;
+select '-Infinity'::float::rational;
 
 -- to float
 select '1/2'::rational::float;
@@ -65,6 +67,10 @@ select rational_simplify('-3/12');
 select rational_simplify('-2147483648/2147483647');
 -- don't move negative if it would overflow
 select rational_simplify('1/-2147483648');
+-- minimum numerator with a negative unit denominator remains representable
+select rational_simplify(rational_create(-2147483648, -1));
+-- zero with the minimum denominator has the same hash as zero over one
+select rational_hash(rational_create(0, -2147483648)) = rational_hash('0/1'::rational);
 -- biggest value reduces
 select rational_simplify('2147483647/2147483647');
 -- smallest value reduces
@@ -102,6 +108,10 @@ select '46342/46341'::rational * '46341/46342';
 
 select 1::rational / 3;
 select '2/3'::rational / '2/3';
+
+-- division by zero
+
+select '1/2'::rational / 0;
 
 -- negation
 
@@ -155,6 +165,12 @@ select '1/2'::rational < '1/2';
 select '1/2'::rational > '1/2';
 -- overflow not possible
 select '1/2147483647'::rational < '2/2147483647';
+
+-- negative denominators created through the constructor compare by value
+
+select rational_create(1, -2) = '-1/2'::rational;
+select rational_create(1, -2) < 0;
+select rational_create(1, -2) > '-1/1'::rational;
 
 -- lte
 select r
@@ -269,3 +285,20 @@ select rational_intermediate('1/3', NULL);
 select rational_intermediate('3/2', NULL);
 -- though not the other direction
 select rational_intermediate(NULL, '15/16');
+
+-- bounded intermediate search
+
+select rational_intermediate(0, '1/2147483647', 1);
+
+select rational_intermediate(
+    '1836311903/1134903170',
+    '1134903170/701408733',
+    100
+);
+
+-- bounded intermediate search is parallel safe
+
+select proparallel
+  from pg_proc
+ where proname = 'rational_intermediate'
+   and pronargs = 3;
