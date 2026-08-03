@@ -125,7 +125,13 @@ rational_in_float(PG_FUNCTION_ARGS)
 				sign;
 	Rational   *result = palloc(sizeof(Rational));
 
-	if (target == (int32) target)
+	if (!isfinite(target) ||
+		target < (float8) INT32_MIN || target > (float8) INT32_MAX)
+		ereport(ERROR,
+				(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+				 errmsg("value too large for rational")));
+
+	if (target == trunc(target))
 	{
 		result->numer = (int32) target;
 		result->denom = 1;
@@ -134,13 +140,6 @@ rational_in_float(PG_FUNCTION_ARGS)
 
 	sign = target < 0.0 ? -1 : 1;
 	target = fabs(target);
-
-	if (!(target <= INT32_MAX)) /* also excludes NaNs */
-	{
-		ereport(ERROR,
-				(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
-				 errmsg("value too large for rational")));
-	}
 	z = target;
 	prev_denom = 0;
 	result->numer = (int32) round(target);
@@ -545,16 +544,18 @@ pg_add_s32_overflow(int32 a, int32 b, int32 *result)
 int32
 gcd(int32 a, int32 b)
 {
-	int32		temp;
+	int64		aa = a,
+				bb = b,
+				temp;
 
-	while (b != 0)
+	while (bb != 0)
 	{
-		temp = a % b;
-		a = b;
-		b = temp;
+		temp = aa % bb;
+		aa = bb;
+		bb = temp;
 	}
 
-	return a;
+	return (int32) aa;
 }
 
 bool

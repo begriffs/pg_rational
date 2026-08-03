@@ -304,6 +304,8 @@ BEGIN
 			ALTER FUNCTION rational_cmp(rational, rational) PARALLEL SAFE;
 			ALTER FUNCTION rational_smaller(rational, rational) PARALLEL SAFE;
 			ALTER FUNCTION rational_larger(rational, rational) PARALLEL SAFE;
+			ALTER FUNCTION rational_intermediate(rational, rational) PARALLEL SAFE;
+			ALTER FUNCTION rational_intermediate(rational, rational, integer) PARALLEL SAFE;
 		$alter$;
 
 		EXECUTE $agg$

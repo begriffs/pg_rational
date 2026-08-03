@@ -108,6 +108,10 @@ select 2147483647.1::float::rational;
 ERROR:  value too large for rational
 select 'NAN'::float::rational;
 ERROR:  value too large for rational
+select 'Infinity'::float::rational;
+ERROR:  value too large for rational
+select '-Infinity'::float::rational;
+ERROR:  value too large for rational
 -- to float
 select '1/2'::rational::float;
  float8 
@@ -205,6 +209,20 @@ select rational_simplify('1/-2147483648');
  rational_simplify 
 -------------------
  1/-2147483648
+(1 row)
+
+-- minimum numerator with a negative unit denominator remains representable
+select rational_simplify(rational_create(-2147483648, -1));
+ rational_simplify 
+-------------------
+ -2147483648/-1
+(1 row)
+
+-- zero with the minimum denominator has the same hash as zero over one
+select rational_hash(rational_create(0, -2147483648)) = rational_hash('0/1'::rational);
+ ?column? 
+----------
+ t
 (1 row)
 
 -- biggest value reduces
@@ -724,3 +742,14 @@ select rational_intermediate(
     100
 );
 ERROR:  intermediate value overflow in rational intermediate
+
+-- bounded intermediate search is parallel safe
+
+select proparallel
+  from pg_proc
+ where proname = 'rational_intermediate'
+   and pronargs = 3;
+ proparallel 
+-------------
+ s
+(1 row)
