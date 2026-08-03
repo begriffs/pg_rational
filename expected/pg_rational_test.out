@@ -305,6 +305,11 @@ select '2/3'::rational / '2/3';
  6/6
 (1 row)
 
+-- division by zero
+
+select '1/2'::rational / 0;
+ERROR:  division by zero
+
 -- negation
 -- flips sign of numerator
 select -('1/2'::rational);
@@ -456,6 +461,26 @@ select '1/2'::rational > '1/2';
 
 -- overflow not possible
 select '1/2147483647'::rational < '2/2147483647';
+ ?column? 
+----------
+ t
+(1 row)
+
+-- negative denominators created through the constructor compare by value
+
+select rational_create(1, -2) = '-1/2'::rational;
+ ?column? 
+----------
+ t
+(1 row)
+
+select rational_create(1, -2) < 0;
+ ?column? 
+----------
+ t
+(1 row)
+
+select rational_create(1, -2) > '-1/1'::rational;
  ?column? 
 ----------
  t
@@ -688,3 +713,14 @@ select rational_intermediate(NULL, '15/16');
  1/2
 (1 row)
 
+-- bounded intermediate search
+
+select rational_intermediate(0, '1/2147483647', 1);
+ERROR:  maximum search depth exceeded
+
+select rational_intermediate(
+    '1836311903/1134903170',
+    '1134903170/701408733',
+    100
+);
+ERROR:  intermediate value overflow in rational intermediate

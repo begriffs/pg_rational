@@ -103,6 +103,10 @@ select '46342/46341'::rational * '46341/46342';
 select 1::rational / 3;
 select '2/3'::rational / '2/3';
 
+-- division by zero
+
+select '1/2'::rational / 0;
+
 -- negation
 
 -- flips sign of numerator
@@ -155,6 +159,12 @@ select '1/2'::rational < '1/2';
 select '1/2'::rational > '1/2';
 -- overflow not possible
 select '1/2147483647'::rational < '2/2147483647';
+
+-- negative denominators created through the constructor compare by value
+
+select rational_create(1, -2) = '-1/2'::rational;
+select rational_create(1, -2) < 0;
+select rational_create(1, -2) > '-1/1'::rational;
 
 -- lte
 select r
@@ -269,3 +279,13 @@ select rational_intermediate('1/3', NULL);
 select rational_intermediate('3/2', NULL);
 -- though not the other direction
 select rational_intermediate(NULL, '15/16');
+
+-- bounded intermediate search
+
+select rational_intermediate(0, '1/2147483647', 1);
+
+select rational_intermediate(
+    '1836311903/1134903170',
+    '1134903170/701408733',
+    100
+);
